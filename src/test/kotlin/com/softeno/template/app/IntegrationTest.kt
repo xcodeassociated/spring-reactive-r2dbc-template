@@ -11,7 +11,7 @@ import com.softeno.template.app.permission.PermissionFixture
 import com.softeno.template.app.permission.PermissionFixture.Companion.aPermission
 import com.softeno.template.app.permission.PermissionFixture.Companion.aPermissionDto
 import com.softeno.template.app.permission.db.PermissionRepository
-import com.softeno.template.sample.http.external.api.SampleResponseDto
+import com.softeno.template.sample.http.api.SampleResponseDto
 import io.mockk.every
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first

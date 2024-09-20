@@ -1,4 +1,4 @@
-package com.softeno.template.sample.http.external.config
+package com.softeno.template.sample.http.config
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean

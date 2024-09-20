@@ -41,12 +41,33 @@ Authorization: Bearer {{oauthToken}}
 client.global.set("permissionId", null)
  %}
 
-### todo: move
+### external
 
 ###
 GET {{host}}/external/{{$random.integer(0, 1000)}}
 Authorization: Bearer {{oauthToken}}
 
+### sample-secured
+
 ###
-GET {{host}}/error?message=foo
+GET {{host}}/sample-secured/{{$random.integer(0, 1000)}}
 Authorization: Bearer {{oauthToken}}
+
+###
+POST {{host}}/sample-secured
+Content-Type: application/json
+Authorization: Bearer {{oauthToken}}
+
+{"data": "sample data: {{$uuid}}"}
+
+###
+PUT {{host}}/sample-secured/{{$random.integer(0, 1000)}}
+Content-Type: application/json
+Authorization: Bearer {{oauthToken}}
+
+{"data": "sample data: {{$uuid}} change"}
+
+###
+DELETE {{host}}/sample-secured/{{$random.integer(0, 1000)}}
+Authorization: Bearer {{oauthToken}}
+

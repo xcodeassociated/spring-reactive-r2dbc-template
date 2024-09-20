@@ -1,4 +1,4 @@
-package com.softeno.template.sample.http.external.config
+package com.softeno.template.sample.http.config
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig
 import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry

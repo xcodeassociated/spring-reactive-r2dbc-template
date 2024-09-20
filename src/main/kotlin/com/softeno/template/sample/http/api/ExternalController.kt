@@ -1,6 +1,6 @@
-package com.softeno.template.sample.http.external.api
+package com.softeno.template.sample.http.api
 
-import com.softeno.template.sample.http.external.config.ExternalClientConfig
+import com.softeno.template.sample.http.config.ExternalClientConfig
 import kotlinx.coroutines.reactor.awaitSingle
 import org.apache.commons.logging.LogFactory
 import org.springframework.beans.factory.annotation.Qualifier
@@ -13,8 +13,6 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
 import java.time.Duration
-
-data class SampleResponseDto(val data: String)
 
 @RestController
 @RequestMapping("/external")

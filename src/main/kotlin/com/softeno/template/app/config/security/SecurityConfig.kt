@@ -100,8 +100,8 @@ class SecurityConfig {
                     "/v3/api-docs/**",
                 )
                     .permitAll()
-                    .pathMatchers("/permissions/**", "/ws/**", "/graphql/**", "/external/**").hasAuthority("ROLE_ADMIN")
-//                    .pathMatchers("/sample-secured/**").authenticated()
+                    .pathMatchers("/permissions/**", "/external/**").hasAuthority("ROLE_ADMIN")
+                    .pathMatchers("/sample-secured/**").authenticated()
             }
             .oauth2ResourceServer { rss ->
                 rss.jwt { jwtDecoder(issuer, jwkSetUri) }
