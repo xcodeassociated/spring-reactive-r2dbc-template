@@ -3,22 +3,25 @@ package com.softeno.template.app.config.security
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
-import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.web.SecurityFilterChain
+import org.springframework.core.Ordered
+import org.springframework.core.annotation.Order
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
+import org.springframework.security.config.web.server.ServerHttpSecurity
+import org.springframework.security.web.server.SecurityWebFilterChain
 
-@Profile(value = ["integration"])
+@EnableWebFluxSecurity
 @Configuration
-@EnableWebSecurity
+@Profile(value = ["integration"])
 class SecurityConfig {
-    @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        return http
-            .cors { it.disable() }
-            .csrf { it.disable() }
-            .authorizeHttpRequests {
-                it.anyRequest().permitAll()
-            }.build()
-    }
 
+    @Bean
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
+        return http.authorizeExchange { ae ->
+            ae.anyExchange().permitAll()
+                .let { http }
+                .csrf { it.disable() }
+                .cors { it.disable() }
+        }.build()
+    }
 }

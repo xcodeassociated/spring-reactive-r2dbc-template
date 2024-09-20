@@ -1,28 +1,48 @@
 package com.softeno.template.sample.http.external.api
 
-import com.softeno.template.sample.http.external.client.ExternalServiceClient
+import com.softeno.template.sample.http.external.config.ExternalClientConfig
+import kotlinx.coroutines.reactor.awaitSingle
 import org.apache.commons.logging.LogFactory
-import org.springframework.http.ResponseEntity
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreakerFactory
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Mono
+import java.time.Duration
+
+data class SampleResponseDto(val data: String)
 
 @RestController
 @RequestMapping("/external")
 @Validated
 class ExternalController(
-    private val externalServiceClient: ExternalServiceClient
+    @Qualifier(value = "external") private val webClient: WebClient,
+    private val reactiveCircuitBreakerFactory: ReactiveCircuitBreakerFactory<*, *>,
+    private val config: ExternalClientConfig
 ) {
     private val log = LogFactory.getLog(javaClass)
 
     @GetMapping("/{id}")
-    fun getExternalResource(@PathVariable id: String): ResponseEntity<SampleResponseDto> {
-        val data = externalServiceClient.fetchExternalResource(id)
-        log.info("External: Received $id, sending: ${data.toString()}")
-        return ResponseEntity.ok(SampleResponseDto(data = data ?: "null"))
-    }
-}
+    suspend fun getHandler(@PathVariable id: String): SampleResponseDto {
+        log.info("[external]: GET id: $id")
+        val response: SampleResponseDto = webClient.get()
+            .uri("/${id}")
+            .retrieve()
+            .bodyToMono(SampleResponseDto::class.java)
+            .timeout(Duration.ofMillis(1_000))
+            .transform {
+                val rcb = reactiveCircuitBreakerFactory.create(config.name)
+                // note: custom exception might be thrown since exception handler is defined
+                rcb.run(it) { Mono.just(SampleResponseDto(data = "FALLBACK")) }
+            }
+            .awaitSingle()
 
-data class SampleResponseDto(val data: String)
+        log.info("[external]: received: $response")
+        return response
+    }
+
+}

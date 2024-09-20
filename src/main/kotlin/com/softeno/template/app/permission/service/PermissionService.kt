@@ -1,69 +1,71 @@
 package com.softeno.template.app.permission.service
 
+import com.softeno.template.app.kafka.ReactiveKafkaSampleProducer
+import com.softeno.template.app.kafka.dto.KafkaMessage
 import com.softeno.template.app.permission.Permission
 import com.softeno.template.app.permission.db.PermissionRepository
 import com.softeno.template.app.permission.mapper.PermissionDto
 import com.softeno.template.app.permission.mapper.toDto
-import com.softeno.template.app.permission.mapper.updateFromDto
-import jakarta.persistence.EntityManager
-import jakarta.persistence.OptimisticLockException
-import jakarta.transaction.Transactional
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.reactive.asFlow
+import kotlinx.coroutines.reactive.awaitFirstOrElse
+import kotlinx.coroutines.reactive.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
+import kotlinx.coroutines.slf4j.MDCContext
+import kotlinx.coroutines.withContext
 import org.apache.commons.logging.LogFactory
-import org.springframework.data.domain.Page
+import org.slf4j.MDC
 import org.springframework.data.domain.Pageable
+import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
+import org.springframework.data.relational.core.query.Criteria.where
+import org.springframework.data.relational.core.query.Query
+import org.springframework.data.relational.core.query.Update
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class PermissionService(
     private val permissionRepository: PermissionRepository,
-    private val entityManager: EntityManager
+    private val kafkaPublisher: ReactiveKafkaSampleProducer,
+    private val template: R2dbcEntityTemplate
 ) {
     private val log = LogFactory.getLog(javaClass)
 
-    fun getAllPermissions(pageable: Pageable): Page<PermissionDto> {
-        return permissionRepository.findAll(pageable).map { it.toDto() }
-    }
-
-    fun getPermission(id: Long): PermissionDto {
-        return permissionRepository.findById(id).get().toDto()
-    }
-
-    @Transactional
-    fun createPermission(permissionDto: PermissionDto): PermissionDto {
-        val permission = Permission()
-        permission.name = permissionDto.name
-        permission.description = permissionDto.description
-        return permissionRepository.save(permission).toDto()
-    }
-
-    @Transactional
-    fun updatePermission(id: Long, permissionDto: PermissionDto): PermissionDto {
-        val permission = entityManager.find(Permission::class.java, id)
-        entityManager.detach(permission)
-        permission.updateFromDto(permissionDto)
-        return entityManager.merge(permission).toDto()
-    }
-
-    @Transactional
-    fun updatePermissionJpql(id: Long, permissionDto: PermissionDto): PermissionDto {
-        val currentVersion = permissionRepository.findVersionById(id)
-        if (currentVersion != permissionDto.version) {
-            throw OptimisticLockException("Version mismatch")
+    suspend fun getAllPermissions(pageable: Pageable): Flow<PermissionDto> =
+        withContext(MDCContext()) {
+            return@withContext permissionRepository.findBy(pageable).map { it.toDto() }.asFlow()
         }
 
-        val newVersion = permissionDto.version + 1
-        val currentTime = System.currentTimeMillis()
-        val modifiedBy = "system" // todo: get from security context
+    suspend fun getPermission(id: Long): PermissionDto =
+        withContext(MDCContext()) {
+            return@withContext permissionRepository.findById(id).awaitFirstOrElse { throw Exception("Not Found: $id") }.toDto()
+        }
 
-        val affectedRows = permissionRepository
-            .updatePermissionNameAndDescriptionByIdAudited(
-                id, permissionDto.name, permissionDto.description, currentVersion, newVersion, modifiedBy, currentTime)
+    @Transactional
+    suspend fun createPermission(permissionDto: PermissionDto): PermissionDto =
+        withContext(MDCContext()) {
+            val created = permissionRepository.save(Permission(name = permissionDto.name, description = permissionDto.description)).awaitSingle().toDto()
+            kafkaPublisher.send(KafkaMessage(content = "CREATED_PREMISSION: ${created.id}", traceId = MDC.get("traceId"), spanId = MDC.get("spanId")))
+            return@withContext created
+        }
 
-        log.debug("[updatePermissionJpql] affectedRows: $affectedRows")
-        return permissionRepository.findById(id).get().toDto()
-    }
+    @Transactional
+    suspend fun updatePermission(id: Long, permissionDto: PermissionDto): PermissionDto =
+        withContext(MDCContext()) {
+            val currentVersion = permissionRepository.findVersionById(id).awaitSingle()
+            if (currentVersion != permissionDto.version) {
+                throw RuntimeException("Version mismatch")
+            }
 
-    fun deletePermission(id: Long) {
-        permissionRepository.deleteById(id)
-    }
+            template.update(Permission::class.java).matching(Query.query(where("id").`is`(id)))
+                .apply(Update.update("name", permissionDto.name)
+                    .set("description", permissionDto.description)
+                    .set("version", permissionDto.version + 1)).awaitSingle()
+            return@withContext template.selectOne(Query.query(where("id").`is`(id)), Permission::class.java).awaitSingle().toDto()
+        }
+
+    suspend fun deletePermission(id: Long) =
+        withContext(MDCContext()) {
+            permissionRepository.deleteById(id).awaitSingleOrNull()
+        }
 }

@@ -7,25 +7,22 @@ import org.springframework.context.annotation.Profile
 import org.springframework.core.convert.converter.Converter
 import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
-import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
+import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
-import org.springframework.security.oauth2.jwt.Jwt
-import org.springframework.security.oauth2.jwt.JwtDecoder
-import org.springframework.security.oauth2.jwt.JwtValidators
-import org.springframework.security.oauth2.jwt.MappedJwtClaimSetConverter
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
+import org.springframework.security.oauth2.jwt.*
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken
-import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.web.cors.CorsConfiguration
-import org.springframework.web.cors.CorsConfigurationSource
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource
-import java.util.Collections
-import kotlin.collections.set
+import org.springframework.web.cors.reactive.CorsConfigurationSource
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource
+import reactor.core.publisher.Mono
+import java.util.*
+
 
 @Profile(value = ["!integration"])
-@EnableWebSecurity
+@EnableWebFluxSecurity
 @Configuration
 @EnableMethodSecurity(prePostEnabled = true)
 class SecurityConfig {
@@ -41,7 +38,7 @@ class SecurityConfig {
 
     }
 
-    class AuthenticationConverter: Converter<Jwt, AbstractAuthenticationToken> {
+    class AuthenticationConverter : Converter<Jwt, AbstractAuthenticationToken> {
         override fun convert(jwt: Jwt): AbstractAuthenticationToken {
             return JwtAuthenticationToken(jwt, Jwt2AuthenticationConverter().convert(jwt))
         }
@@ -58,8 +55,8 @@ class SecurityConfig {
         }
     }
 
-    fun jwtDecoder(issuer: String, jwkSetUri: String): JwtDecoder {
-        val jwtDecoder: NimbusJwtDecoder = NimbusJwtDecoder.withJwkSetUri(jwkSetUri).build()
+    fun jwtDecoder(issuer: String, jwkSetUri: String): ReactiveJwtDecoder {
+        val jwtDecoder: NimbusReactiveJwtDecoder = NimbusReactiveJwtDecoder.withJwkSetUri(jwkSetUri).build()
         jwtDecoder.setClaimSetConverter(UsernameSubClaimAdapter())
         jwtDecoder.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuer))
         return jwtDecoder
@@ -79,15 +76,20 @@ class SecurityConfig {
     }
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity,
-                            @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}") issuer: String,
-                            @Value("\${spring.security.oauth2.client.provider.keycloak.jwk-set-uri}") jwkSetUri: String
-    ): SecurityFilterChain {
+    fun securityWebFilterChain(
+        http: ServerHttpSecurity,
+        @Value("\${spring.security.oauth2.resourceserver.jwt.issuer-uri}") issuer: String,
+        @Value("\${spring.security.oauth2.client.provider.keycloak.jwk-set-uri}") jwkSetUri: String
+    ): SecurityWebFilterChain {
         return http
             .cors { it.configurationSource(corsConfigurationSource()) }
             .csrf { it.disable() }
-            .authorizeHttpRequests {
-                it.requestMatchers(
+            .authorizeExchange { authExchange ->
+                authExchange.pathMatchers(
+                    // sample
+                    "/async/**",
+                    "/sample/**",
+                    "/rsocket/**",
                     // monitoring
                     "/actuator/**",
                     // springdocs
@@ -95,14 +97,16 @@ class SecurityConfig {
                     "/webjars/**",
                     "/swagger-resources/**",
                     "/swagger-ui/**",
-                    "/v3/api-docs/**").permitAll()
-                it.requestMatchers("/permissions/**", "/external/**", "/error/**")
-                    .hasAuthority("ROLE_ADMIN")
+                    "/v3/api-docs/**",
+                )
+                    .permitAll()
+                    .pathMatchers("/permissions/**", "/ws/**", "/graphql/**", "/external/**").hasAuthority("ROLE_ADMIN")
+//                    .pathMatchers("/sample-secured/**").authenticated()
             }
             .oauth2ResourceServer { rss ->
                 rss.jwt { jwtDecoder(issuer, jwkSetUri) }
                 rss.jwt { it.jwtAuthenticationConverter { jwt ->
-                    AuthenticationConverter().convert(jwt)
+                    Mono.just(AuthenticationConverter().convert(jwt))
                 } }
             }
             .build()

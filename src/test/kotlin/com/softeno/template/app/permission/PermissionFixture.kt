@@ -2,19 +2,10 @@ package com.softeno.template.app.permission
 
 import com.softeno.template.app.permission.mapper.PermissionDto
 
-class PermissionFixture {
+interface PermissionFixture {
     companion object {
         fun aPermission(name: String = "some permission", description: String = "some description"): Permission {
-            val permission = Permission()
-            permission.id = null
-            permission.createdDate = null
-            permission.createdBy = null
-            permission.modifiedBy = null
-            permission.modifiedDate = null
-            permission.version = null
-            permission.name = name
-            permission.description = description
-
+            val permission = Permission(name = name, description = description)
             return permission
         }
 

@@ -23,14 +23,7 @@ fun Permission.toDto(): PermissionDto {
         modifiedDate = this.modifiedDate,
         version = this.version,
 
-        name = this.name!!,
-        description = this.description!!
+        name = this.name,
+        description = this.description
     )
-}
-
-fun Permission.updateFromDto(permissionDto: PermissionDto): Permission {
-    this.name = permissionDto.name
-    this.description = permissionDto.description
-    this.version = permissionDto.version
-    return this
 }

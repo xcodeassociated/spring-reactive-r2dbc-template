@@ -1,7 +1,7 @@
 ### Permissions
 
 ###
-GET {{host}}/permissions?page=0&size=10&sort=id&direction=DESC
+GET {{host}}/permissions?page=0&size=10&sort=id&direction=ASC
 Authorization: Bearer {{oauthToken}}
 
 ###
@@ -20,7 +20,7 @@ GET {{host}}/permissions/{{permissionId}}
 Authorization: Bearer {{oauthToken}}
 
 ###
-PUT {{host}}/permissions/{{permissionId}}
+PUT {{host}}/permissions/5
 Content-Type: application/json
 Authorization: Bearer {{oauthToken}}
 

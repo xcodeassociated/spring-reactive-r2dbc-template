@@ -1,18 +1,58 @@
 package com.softeno.template.app.permission
 
-import com.softeno.template.app.common.db.BaseEntity
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.Table
+import org.springframework.data.annotation.CreatedBy
+import org.springframework.data.annotation.CreatedDate
+import org.springframework.data.annotation.Id
+import org.springframework.data.annotation.LastModifiedBy
+import org.springframework.data.annotation.LastModifiedDate
+import org.springframework.data.annotation.Version
+import org.springframework.data.relational.core.mapping.Table
 import java.util.UUID
+import kotlin.jvm.javaClass
 
-@Entity
-@Table(name = "permissions")
-class Permission(uuid: UUID = UUID.randomUUID()) : BaseEntity(uuid) {
 
-	@Column(unique = true, nullable = false)
-	var name: String? = null
+@Table(value = "permissions")
+data class Permission(
+	val uuid: UUID,
 
-	@Column(nullable = false, columnDefinition = "TEXT")
-	var description: String? = null
+	@Id
+	var id: Long? = null,
+
+	@CreatedDate
+	val createdDate: Long? = null,
+
+	@LastModifiedDate
+	val modifiedDate: Long? = null,
+
+	@CreatedBy
+	val createdBy: String? = null,
+
+	@LastModifiedBy
+	val modifiedBy: String? = null,
+
+	@Version
+	val version: Long = 0,
+
+	val name: String,
+
+	val description: String)
+{
+	constructor(name: String, description: String) :
+			this(
+				uuid = UUID.randomUUID(),
+				name = name,
+				description = description)
+
+	override fun equals(other: Any?): Boolean {
+		return other is Permission && (uuid == other.uuid)
+	}
+
+	override fun hashCode(): Int {
+		return uuid.hashCode()
+	}
+
+	override fun toString(): String {
+		return "${javaClass.simpleName}(id = $id, uuid = $uuid, version = $version)"
+	}
+
 }

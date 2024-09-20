@@ -14,22 +14,19 @@
     <root level="info">
         <appender-ref ref="Console" />
     </root>
-    <!--    hibernate-->
-    <logger name="org.hibernate" level="trace" additivity="false" >
-        <appender-ref ref="Console" />
-    </logger>
-    <logger name="org.hibernate.type" level="all" additivity="false" >
-        <appender-ref ref="Console" />
-    </logger>
-    <logger name="org.hibernate.SQL" level="all" additivity="false" >
-        <appender-ref ref="Console" />
-    </logger>
-    <!--    jdbc-->
-    <logger name="org.springframework.jdbc" level="trace" additivity="false" >
-        <appender-ref ref="Console" />
-    </logger>
     <!--    application-->
     <logger name="com.softeno" level="trace" additivity="false">
         <appender-ref ref="Console" />
     </logger>
+    <!--    db -->
+    <logger name="logging.level.io.r2dbc" level="debug" additivity="false" >
+        <appender-ref ref="Console" />
+    </logger>
+    <logger name="logging.level.org.springframework.r2dbc" level="debug" additivity="false" >
+        <appender-ref ref="Console" />
+    </logger>
+    <logger name="logging.level.org.springframework.data" level="debug" additivity="false" >
+        <appender-ref ref="Console" />
+    </logger>
+    <!-- -->
 </configuration>
