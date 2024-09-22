@@ -42,11 +42,9 @@ import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.toFlux
 
-@Testcontainers
 @SpringBootTest(
     classes = [SoftenoMvcJpaApp::class],
     properties = ["spring.profiles.active=integration"],
@@ -76,6 +74,8 @@ abstract class BaseIntegrationTest {
         @JvmStatic
         @DynamicPropertySource
         fun registerDynamicProperties(registry: DynamicPropertyRegistry) {
+            postgreSQLContainer.start()
+
             registry.add("spring.liquibase.url") {
                 "jdbc:postgresql://${postgreSQLContainer.host}:${postgreSQLContainer.firstMappedPort}/${postgreSQLContainer.databaseName}"
             }
