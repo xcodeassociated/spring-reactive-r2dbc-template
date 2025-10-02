@@ -1,58 +1,60 @@
 package com.softeno.template.app.permission
 
-import org.springframework.data.annotation.CreatedBy
-import org.springframework.data.annotation.CreatedDate
-import org.springframework.data.annotation.Id
-import org.springframework.data.annotation.LastModifiedBy
-import org.springframework.data.annotation.LastModifiedDate
-import org.springframework.data.annotation.Version
+import org.springframework.data.annotation.*
+import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
-import java.util.UUID
-import kotlin.jvm.javaClass
+import java.util.*
 
+open class BaseEntity(
+    open val uuid: UUID,
+    open var id: Long? = null,
+)
 
 @Table(value = "permissions")
 data class Permission(
-	val uuid: UUID,
+    @Column(value = "uuid")
+    override val uuid: UUID,
 
-	@Id
-	var id: Long? = null,
+    @Id
+    @Column(value = "id")
+    override var id: Long? = null,
 
-	@CreatedDate
-	val createdDate: Long? = null,
+    @CreatedDate
+    @Column(value = "created_date")
+    val createdDate: Long? = null,
 
-	@LastModifiedDate
-	val modifiedDate: Long? = null,
+    @LastModifiedDate
+    @Column(value = "modified_date")
+    val modifiedDate: Long? = null,
 
-	@CreatedBy
-	val createdBy: String? = null,
+    @CreatedBy
+    @Column(value = "created_by")
+    val createdBy: String? = null,
 
-	@LastModifiedBy
-	val modifiedBy: String? = null,
+    @LastModifiedBy
+    @Column(value = "modified_by")
+    val modifiedBy: String? = null,
 
-	@Version
-	val version: Long = 0,
+    @Version
+    @Column(value = "version")
+    val version: Long = 0,
 
-	val name: String,
+    @Column(value = "name")
+    val name: String,
 
-	val description: String)
-{
-	constructor(name: String, description: String) :
-			this(
-				uuid = UUID.randomUUID(),
-				name = name,
-				description = description)
+    @Column(value = "description")
+    val description: String
+) : BaseEntity(uuid) {
+    constructor(name: String, description: String) :
+            this(
+                uuid = UUID.randomUUID(),
+                name = name,
+                description = description
+            )
 
-	override fun equals(other: Any?): Boolean {
-		return other is Permission && (uuid == other.uuid)
-	}
+    override fun equals(other: Any?) = other is Permission && (uuid == other.uuid)
 
-	override fun hashCode(): Int {
-		return uuid.hashCode()
-	}
+    override fun hashCode() = uuid.hashCode()
 
-	override fun toString(): String {
-		return "${javaClass.simpleName}(id = $id, uuid = $uuid, version = $version)"
-	}
-
+    override fun toString() = "${javaClass.simpleName}(id = $id, uuid = $uuid, version = $version)"
 }

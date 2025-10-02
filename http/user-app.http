@@ -20,18 +20,11 @@ GET {{host}}/permissions/{{permissionId}}
 Authorization: Bearer {{oauthToken}}
 
 ###
-PUT {{host}}/permissions/5
+PUT {{host}}/permissions/1
 Content-Type: application/json
 Authorization: Bearer {{oauthToken}}
 
-{"name": "test-coroutine-changed", "description": "test description coroutine changed!", "version": 0}
-
-###
-PUT {{host}}/permissions/{{permissionId}}/jpql
-Content-Type: application/json
-Authorization: Bearer {{oauthToken}}
-
-{"name": "test-coroutine-changed", "description": "test description coroutine changed via jpql!", "version": 0}
+{"name": "test-coroutine-changed 22", "description": "test description coroutine changed!", "version": 1}
 
 ###
 DELETE {{host}}/permissions/{{permissionId}}

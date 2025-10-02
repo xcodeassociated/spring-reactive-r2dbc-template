@@ -22,13 +22,9 @@ databaseChangeLog:
             name: id
             type: BIGINT
         - column:
-            constraints:
-              nullable: false
             name: created_by
             type: VARCHAR(255)
         - column:
-            constraints:
-              nullable: false
             name: created_date
             type: BIGINT
         - column:

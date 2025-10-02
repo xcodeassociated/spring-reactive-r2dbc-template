@@ -6,6 +6,8 @@ import com.softeno.template.app.permission.mapper.PermissionDto
 import com.softeno.template.app.permission.service.PermissionService
 import io.micrometer.tracing.Tracer
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.apache.commons.logging.LogFactory
 import org.slf4j.MDC
 import org.springframework.http.ResponseEntity
@@ -60,8 +62,8 @@ class PermissionController(
     }
 
     @PutMapping("/permissions/{id}")
-    suspend fun updatePermission(@PathVariable id: Long, @RequestBody permissionDto: PermissionDto): ResponseEntity<PermissionDto> {
-        val result = permissionService.updatePermission(id, permissionDto)
+    suspend fun updatePermission(@PathVariable id: Long, @RequestBody permissionDto: PermissionDto, monoPrincipal: Mono<Principal>): ResponseEntity<PermissionDto> {
+        val result = permissionService.updatePermission(id, permissionDto, principal = monoPrincipal.awaitSingle())
         return ResponseEntity.ok(result)
     }
 

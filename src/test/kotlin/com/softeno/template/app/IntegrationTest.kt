@@ -10,11 +10,13 @@ import com.softeno.template.SoftenoMvcJpaApp
 import com.softeno.template.app.permission.PermissionFixture
 import com.softeno.template.app.permission.PermissionFixture.Companion.aPermission
 import com.softeno.template.app.permission.PermissionFixture.Companion.aPermissionDto
+import com.softeno.template.app.permission.db.OperationNotPermittedException
 import com.softeno.template.app.permission.db.PermissionRepository
 import com.softeno.template.sample.http.api.SampleResponseDto
 import io.mockk.every
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import kotlinx.coroutines.reactive.awaitSingle
@@ -22,9 +24,11 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -111,6 +115,135 @@ class ContextLoadsTest : BaseIntegrationTest() {
     @Test
     fun testConnection() {
         assertTrue(postgreSQLContainer.isRunning)
+    }
+}
+
+class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixture {
+
+    @Test
+    fun `should not insert entities if any of them have id already`() = runTest {
+        // given
+        val aPermission = aPermission()
+        val aPermissionWithId = aPermission().copy(id = 1)
+
+        // expect
+        val exception = assertThrows<OperationNotPermittedException> {
+            permissionRepository.insertAllReturningIds(listOf(aPermission, aPermissionWithId))
+        }
+        assertEquals(exception.message, "Cannot insert entities with non null id")
+    }
+
+    @Test
+    fun `should not update entities if any of them have id null`() = runTest {
+        // given aPermission
+        val aPermission = aPermission()
+        val aPermissionWithId = aPermission().copy(id = 1)
+
+        // expect
+        val exception = assertThrows<OperationNotPermittedException> {
+            permissionRepository.updateAllReturningIds(listOf(aPermission, aPermissionWithId))
+        }
+        assertEquals(exception.message, "Cannot update entities with null id")
+    }
+
+    @Test
+    fun `insert all the entities and return their ids`() = runTest {
+        // given
+        val aPermission = aPermission()
+        val anotherPermission = aPermission()
+
+        // when
+        val returned = permissionRepository.insertAllReturningIds(listOf(aPermission, anotherPermission))
+
+        // then
+        assertEquals(returned.size, 2)
+
+        assertEquals(permissionRepository.findAll().asFlow().count(), 2)
+        val saved = permissionRepository.findAll().asFlow().toList()
+
+        assertEquals(saved[0].name, aPermission.name)
+        assertEquals(saved[0].description, aPermission.description)
+        assertEquals(saved[0].uuid, aPermission.uuid)
+
+        assertEquals(saved[1].name, anotherPermission.name)
+        assertEquals(saved[1].description, anotherPermission.description)
+        assertEquals(saved[1].uuid, anotherPermission.uuid)
+    }
+
+    @Test
+    fun `should insert all the entities and update them keeping the same db ids`() = runTest {
+        // given
+        val aPermission = aPermission(name = "1", description = "before change 1")
+            .copy(createdBy = "user 1", createdDate = 123456L, modifiedBy = "user 2", modifiedDate = 123456L, version = 0)
+        val anotherPermission = aPermission(name = "2", description = "before change 2")
+            .copy(createdBy = "user 2", createdDate = 654321L, modifiedBy = "user 2", modifiedDate = 654321L, version = 0)
+
+        // when
+        val returned = permissionRepository.insertAllReturningIds(listOf(aPermission, anotherPermission))
+        val aPermissionWithId = aPermission.copy(id = returned[aPermission])
+        val anotherPermissionWithId = anotherPermission.copy(id = returned[anotherPermission])
+
+        // then
+        assertEquals(returned.size, 2)
+
+        val saved = permissionRepository.findAll().asFlow().toList()
+        assertEquals(saved.size, 2)
+
+        assertEquals(saved[0].uuid, aPermission.uuid)
+        assertEquals(saved[0].name, aPermission.name)
+        assertEquals(saved[0].description, aPermission.description)
+        assertEquals(saved[0].uuid, aPermission.uuid)
+        assertEquals(saved[0].version, aPermission.version)
+        assertEquals(saved[0].createdDate, aPermission.createdDate)
+        assertEquals(saved[0].createdBy, aPermission.createdBy)
+        assertEquals(saved[0].modifiedBy, aPermission.modifiedBy)
+        assertEquals(saved[0].modifiedDate, aPermission.modifiedDate)
+
+        assertEquals(saved[1].uuid, anotherPermission.uuid)
+        assertEquals(saved[1].name, anotherPermission.name)
+        assertEquals(saved[1].description, anotherPermission.description)
+        assertEquals(saved[1].uuid, anotherPermission.uuid)
+        assertEquals(saved[1].version, anotherPermission.version)
+        assertEquals(saved[1].createdDate, anotherPermission.createdDate)
+        assertEquals(saved[1].createdBy, anotherPermission.createdBy)
+        assertEquals(saved[1].modifiedBy, anotherPermission.modifiedBy)
+        assertEquals(saved[1].modifiedDate, anotherPermission.modifiedDate)
+
+
+        // when change
+        val changedPermission = aPermissionWithId.copy(modifiedDate = 1111111L , modifiedBy = "user 3", version = saved[0].version + 1)
+        val changedAnotherPermission = anotherPermissionWithId.copy(modifiedDate = 2222222L, modifiedBy = "user 4", version = saved[1].version + 1)
+
+        val changedReturned = permissionRepository.updateAllReturningIds(listOf(changedPermission, changedAnotherPermission))
+
+        // then
+        assertEquals(changedPermission.uuid, saved[0].uuid)
+        assertEquals(changedAnotherPermission.uuid, saved[1].uuid)
+
+        assertEquals(changedReturned.size, 2)
+
+        val changedSaved = permissionRepository.findAll().asFlow().toList()
+        assertEquals(changedSaved.size, 2)
+
+        assertEquals(changedSaved[0].id, changedPermission.id)
+        assertEquals(changedSaved[0].name, changedPermission.name)
+        assertEquals(changedSaved[0].description, changedPermission.description)
+        assertEquals(changedSaved[0].uuid, changedPermission.uuid)
+        assertEquals(changedSaved[0].version, changedPermission.version)
+        assertEquals(changedSaved[0].createdDate, changedPermission.createdDate)
+        assertEquals(changedSaved[0].createdBy, changedPermission.createdBy)
+        assertEquals(changedSaved[0].modifiedDate, changedPermission.modifiedDate)
+        assertEquals(changedSaved[0].modifiedBy, changedPermission.modifiedBy)
+
+        assertEquals(changedSaved[1].id, changedAnotherPermission.id)
+        assertEquals(changedSaved[1].name, changedAnotherPermission.name)
+        assertEquals(changedSaved[1].description, changedAnotherPermission.description)
+        assertEquals(changedSaved[1].uuid, changedAnotherPermission.uuid)
+        assertEquals(changedSaved[1].version, changedAnotherPermission.version)
+        assertEquals(changedSaved[1].createdDate, changedAnotherPermission.createdDate)
+        assertEquals(changedSaved[1].createdBy, changedAnotherPermission.createdBy)
+        assertEquals(changedSaved[1].modifiedDate, changedAnotherPermission.modifiedDate)
+        assertEquals(changedSaved[1].modifiedBy, changedAnotherPermission.modifiedBy)
     }
 }
 

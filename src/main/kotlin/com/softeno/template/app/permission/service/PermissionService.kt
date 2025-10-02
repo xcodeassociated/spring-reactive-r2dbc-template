@@ -22,6 +22,8 @@ import org.springframework.data.relational.core.query.Query
 import org.springframework.data.relational.core.query.Update
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.security.Principal
+import java.time.Instant
 
 @Service
 class PermissionService(
@@ -50,9 +52,13 @@ class PermissionService(
         }
 
     @Transactional
-    suspend fun updatePermission(id: Long, permissionDto: PermissionDto): PermissionDto =
+    suspend fun updatePermission(id: Long, permissionDto: PermissionDto, principal: Principal): PermissionDto =
         withContext(MDCContext()) {
-            val currentVersion = permissionRepository.findVersionById(id).awaitSingle()
+            val currentVersion = permissionRepository.findVersionById(id).awaitSingleOrNull()
+            if (currentVersion == null) {
+                throw RuntimeException("Not Found: $id, version: $currentVersion")
+            }
+
             if (currentVersion != permissionDto.version) {
                 throw RuntimeException("Version mismatch")
             }
@@ -60,7 +66,10 @@ class PermissionService(
             template.update(Permission::class.java).matching(Query.query(where("id").`is`(id)))
                 .apply(Update.update("name", permissionDto.name)
                     .set("description", permissionDto.description)
+                    .set("modified_by", principal.name)
+                    .set("modified_date", Instant.now().toEpochMilli())
                     .set("version", permissionDto.version + 1)).awaitSingle()
+
             return@withContext template.selectOne(Query.query(where("id").`is`(id)), Permission::class.java).awaitSingle().toDto()
         }
 
