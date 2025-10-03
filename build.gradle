@@ -1,8 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-	id 'org.springframework.boot' version '3.3.3'
-	id 'io.spring.dependency-management' version '1.1.6'
+	id 'org.springframework.boot' version '3.5.6'
+	id 'io.spring.dependency-management' version '1.1.7'
 	id 'org.jetbrains.kotlin.jvm' version '2.0.20'
 	id 'org.jetbrains.kotlin.plugin.spring' version '2.0.20'
 	id "org.liquibase.gradle" version "2.2.1"
@@ -12,7 +12,7 @@ plugins {
 
 group = 'com.softeno'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '17'
+sourceCompatibility = '21'
 
 configurations {
 	compileOnly {
@@ -25,8 +25,8 @@ repositories {
 }
 
 ext {
-	set('springCloudVersion', '2023.0.3')
-	set('testcontainersVersion', '1.20.1')
+	set('springCloudVersion', '2025.0.0')
+	set('testcontainersVersion', '1.21.3')
 }
 
 dependencies {
@@ -50,19 +50,19 @@ dependencies {
 	testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test'
 	testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
 	testImplementation 'io.projectreactor:reactor-test'
-	testImplementation 'io.mockk:mockk:1.13.12'
+	testImplementation 'io.mockk:mockk:1.14.5'
 	testImplementation 'com.ninja-squad:springmockk:4.0.2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 	// wiremock
-	testImplementation 'org.wiremock:wiremock-standalone:3.9.1'
+	testImplementation 'org.wiremock:wiremock-standalone:3.13.1'
 
 	// monitoring
 	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
 	// elk
-	implementation 'net.logstash.logback:logstash-logback-encoder:8.0'
+	implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
 
 	// testcontainers
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
@@ -71,18 +71,18 @@ dependencies {
 	testImplementation 'org.testcontainers:r2dbc'
 
 	// liquibase
-	implementation ('org.liquibase:liquibase-core:4.29.2') {
+	implementation ('org.liquibase:liquibase-core:4.33.0') {
 		exclude group: 'javax.xml.bind', module: 'jaxb-receiver'
 		exclude group: 'org.liquibase.ext', module: 'liquibase-hibernate5'
 	}
 	liquibaseRuntime 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 	liquibaseRuntime 'org.jetbrains.kotlin:kotlin-reflect'
-	liquibaseRuntime 'org.liquibase.ext:liquibase-postgresql:4.29.2'
-	liquibaseRuntime 'org.postgresql:postgresql:42.7.4'
-	liquibaseRuntime 'ch.qos.logback:logback-core:1.5.8'
-	liquibaseRuntime 'ch.qos.logback:logback-classic:1.5.8'
-	liquibaseRuntime 'info.picocli:picocli:4.7.6'
-	liquibaseRuntime "org.springframework.boot:spring-boot-starter-data-r2dbc:3.3.3"
+	liquibaseRuntime 'org.liquibase.ext:liquibase-postgresql:4.33.0'
+	liquibaseRuntime 'org.postgresql:postgresql:42.7.8'
+	liquibaseRuntime 'ch.qos.logback:logback-core:1.5.18'
+	liquibaseRuntime 'ch.qos.logback:logback-classic:1.5.18'
+	liquibaseRuntime 'info.picocli:picocli:4.7.7'
+	liquibaseRuntime "org.springframework.boot:spring-boot-starter-data-r2dbc:3.5.6"
 	liquibaseRuntime sourceSets.main.output
 
 	// spring security
@@ -100,13 +100,13 @@ dependencies {
 	implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
 
 	// macOs ARM only
-	if (osdetector.classifier == "osx-aarch_64") {
-		runtimeOnly("io.netty:netty-resolver-dns-native-macos:4.1.113.Final:${osdetector.classifier}")
-	}
+    if (osdetector.classifier == "osx-aarch_64") {
+        runtimeOnly("io.netty:netty-resolver-dns-native-macos:4.2.3.Final:${osdetector.classifier}")
+    }
 
 	// springdoc
-	implementation 'org.springdoc:springdoc-openapi-starter-common:2.6.0'
-	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.6.0'
+	implementation 'org.springdoc:springdoc-openapi-starter-common:2.8.13'
+	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.13'
 
 	// zipkin
 	implementation 'io.micrometer:micrometer-tracing-bridge-otel'
@@ -137,7 +137,7 @@ dependencyManagement {
 tasks.withType(KotlinCompile) {
 	kotlinOptions {
 		freeCompilerArgs = ['-Xjsr305=strict']
-		jvmTarget = '17'
+		jvmTarget = '21'
 	}
 }
 
