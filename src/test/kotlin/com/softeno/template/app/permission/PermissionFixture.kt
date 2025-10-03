@@ -1,7 +1,7 @@
 package com.softeno.template.app.permission
 
 import com.softeno.template.app.permission.mapper.PermissionDto
-import java.util.UUID
+import java.util.*
 
 interface PermissionFixture {
     companion object {

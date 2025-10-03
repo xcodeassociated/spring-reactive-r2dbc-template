@@ -1,7 +1,11 @@
 ### Permissions
 
 ###
-GET {{host}}/permissions?page=0&size=10&sort=id&direction=ASC
+GET {{host}}/permissions?page=0&size=10&sort=id&direction=DESC&search=test&createdFrom=1759429679915&createdBy=78652bda-8e80-432b-ba1b-47b4f7ee98e6
+Authorization: Bearer {{oauthToken}}
+
+###
+GET {{host}}/permissions/count?search=test&createdFrom=1759429679915&createdBy=78652bda-8e80-432b-ba1b-47b4f7ee98e6
 Authorization: Bearer {{oauthToken}}
 
 ###
@@ -20,11 +24,11 @@ GET {{host}}/permissions/{{permissionId}}
 Authorization: Bearer {{oauthToken}}
 
 ###
-PUT {{host}}/permissions/1
+PUT {{host}}/permissions/{{permissionId}}
 Content-Type: application/json
 Authorization: Bearer {{oauthToken}}
 
-{"name": "test-coroutine-changed 22", "description": "test description coroutine changed!", "version": 1}
+{"name": "test-coroutine-changed", "description": "test description coroutine changed!", "version": 1}
 
 ###
 DELETE {{host}}/permissions/{{permissionId}}

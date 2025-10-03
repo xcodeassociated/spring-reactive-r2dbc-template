@@ -3,12 +3,12 @@ package com.softeno.template.app.permission.service
 import com.softeno.template.app.kafka.ReactiveKafkaSampleProducer
 import com.softeno.template.app.kafka.dto.KafkaMessage
 import com.softeno.template.app.permission.Permission
+import com.softeno.template.app.permission.api.PermissionController
 import com.softeno.template.app.permission.db.PermissionRepository
 import com.softeno.template.app.permission.mapper.PermissionDto
 import com.softeno.template.app.permission.mapper.toDto
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.awaitFirstOrElse
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.slf4j.MDCContext
@@ -33,20 +33,26 @@ class PermissionService(
 ) {
     private val log = LogFactory.getLog(javaClass)
 
-    suspend fun getAllPermissions(pageable: Pageable): Flow<PermissionDto> =
+    suspend fun getAllPermissions(pageable: Pageable, search: PermissionController.PermissionSearch): Flow<PermissionDto> =
         withContext(MDCContext()) {
-            return@withContext permissionRepository.findBy(pageable).map { it.toDto() }.asFlow()
+            return@withContext permissionRepository.findBy(search, pageable).map { it.toDto() }
+        }
+
+    suspend fun countPermissions(search: PermissionController.PermissionSearch): Long =
+        withContext(MDCContext()) {
+            return@withContext permissionRepository.countBy(search)
         }
 
     suspend fun getPermission(id: Long): PermissionDto =
         withContext(MDCContext()) {
-            return@withContext permissionRepository.findById(id).awaitFirstOrElse { throw Exception("Not Found: $id") }.toDto()
+            val result = permissionRepository.findById(id) ?: throw Exception("Not Found: $id")
+            return@withContext result.toDto()
         }
 
     @Transactional
     suspend fun createPermission(permissionDto: PermissionDto): PermissionDto =
         withContext(MDCContext()) {
-            val created = permissionRepository.save(Permission(name = permissionDto.name, description = permissionDto.description)).awaitSingle().toDto()
+            val created = permissionRepository.save(Permission(name = permissionDto.name, description = permissionDto.description)).toDto()
             kafkaPublisher.send(KafkaMessage(content = "CREATED_PREMISSION: ${created.id}", traceId = MDC.get("traceId"), spanId = MDC.get("spanId")))
             return@withContext created
         }
@@ -75,6 +81,6 @@ class PermissionService(
 
     suspend fun deletePermission(id: Long) =
         withContext(MDCContext()) {
-            permissionRepository.deleteById(id).awaitSingleOrNull()
+            permissionRepository.deleteById(id)
         }
 }

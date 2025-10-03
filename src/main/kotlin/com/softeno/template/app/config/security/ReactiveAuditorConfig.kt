@@ -10,7 +10,6 @@ import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.oauth2.jwt.Jwt
 import reactor.core.publisher.Mono
-import kotlin.jvm.javaClass
 
 
 class AuditorAwareImpl : ReactiveAuditorAware<String> {

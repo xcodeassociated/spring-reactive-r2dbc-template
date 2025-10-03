@@ -2,20 +2,19 @@ package com.softeno.template.app.permission.db
 
 import com.softeno.template.app.permission.BaseEntity
 import com.softeno.template.app.permission.Permission
+import com.softeno.template.app.permission.api.PermissionController
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactor.awaitSingle
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
-import org.springframework.data.domain.Sort
 import org.springframework.data.r2dbc.repository.Query
-import org.springframework.data.r2dbc.repository.R2dbcRepository
 import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
+import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 import org.springframework.data.repository.query.Param
 import org.springframework.r2dbc.core.DatabaseClient
 import org.springframework.r2dbc.core.bind
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
-import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.util.*
 import kotlin.reflect.KProperty1
@@ -24,8 +23,36 @@ import kotlin.reflect.full.memberProperties
 import kotlin.reflect.jvm.javaField
 
 @Repository
-interface PermissionRepository : R2dbcRepository<Permission, Long>, BatchPermissionRepository<Permission> {
-    fun findBy(pageable: Pageable): Flux<Permission>
+interface PermissionRepository : CoroutineCrudRepository<Permission, Long>, BatchPermissionRepository<Permission> {
+
+    @Query("""
+        SELECT p.* FROM permissions p 
+        WHERE (:#{#search.search} IS NULL OR (
+            p.name LIKE CONCAT('%', :#{#search.search}, '%') OR
+            p.description LIKE CONCAT('%', :#{#search.search}, '%')
+        )) 
+        AND (:#{#search.createdFrom} IS NULL OR p.created_date >= :#{#search.createdFrom}) 
+        AND (:#{#search.createdTo} IS NULL OR p.created_date <= :#{#search.createdTo}) 
+        AND (:#{#search.createdBy} IS NULL OR p.created_by = :#{#search.createdBy})
+        ORDER BY 
+            CASE WHEN :#{#pageable.sort.toString()} = 'id: ASC' THEN p.id END ASC, 
+            CASE WHEN :#{#pageable.sort.toString()} = 'id: DESC' THEN p.id END DESC
+        LIMIT :#{#pageable.pageSize} 
+        OFFSET :#{#pageable.offset} 
+    """)
+    suspend fun findBy(search: PermissionController.PermissionSearch, pageable: Pageable): Flow<Permission>
+
+    @Query("""
+        SELECT COUNT(*) FROM permissions p 
+        WHERE (:#{#search.search} IS NULL OR (
+            p.name LIKE CONCAT('%', :#{#search.search}, '%') OR
+            p.description LIKE CONCAT('%', :#{#search.search}, '%')
+        )) 
+        AND (:#{#search.createdFrom} IS NULL OR p.created_date >= :#{#search.createdFrom}) 
+        AND (:#{#search.createdTo} IS NULL OR p.created_date <= :#{#search.createdTo}) 
+        AND (:#{#search.createdBy} IS NULL OR p.created_by = :#{#search.createdBy})
+    """)
+    suspend fun countBy(search: PermissionController.PermissionSearch): Long
 
     @Query("SELECT p.version FROM permissions as p WHERE p.id = :id")
     fun findVersionById(@Param("id") id: Long): Mono<Long>
@@ -159,7 +186,3 @@ class BatchPermissionRepositoryImpl<T : BaseEntity>(private val databaseClient: 
 }
 
 class OperationNotPermittedException(message: String) : RuntimeException(message)
-
-fun getPageRequest(page: Int, size: Int, sort: String, direction: String) =
-    Sort.by(Sort.Order(if (direction == "ASC") Sort.Direction.ASC else Sort.Direction.DESC, sort))
-        .let { PageRequest.of(page, size, it) }

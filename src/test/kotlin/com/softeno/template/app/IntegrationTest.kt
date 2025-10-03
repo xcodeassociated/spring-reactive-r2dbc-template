@@ -2,29 +2,25 @@ package com.softeno.template.app
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.*
-import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.options
 import com.ninjasquad.springmockk.MockkBean
 import com.softeno.template.SoftenoMvcJpaApp
 import com.softeno.template.app.permission.PermissionFixture
 import com.softeno.template.app.permission.PermissionFixture.Companion.aPermission
 import com.softeno.template.app.permission.PermissionFixture.Companion.aPermissionDto
+import com.softeno.template.app.permission.api.PermissionController
 import com.softeno.template.app.permission.db.OperationNotPermittedException
 import com.softeno.template.app.permission.db.PermissionRepository
 import com.softeno.template.sample.http.api.SampleResponseDto
-import io.mockk.every
+import io.mockk.coEvery
+import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.awaitFirstOrNull
-import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -42,12 +38,11 @@ import org.springframework.test.annotation.DirtiesContext
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.reactive.server.expectBody
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
-import reactor.core.publisher.Mono
-import reactor.kotlin.core.publisher.toFlux
 
 @SpringBootTest(
     classes = [SoftenoMvcJpaApp::class],
@@ -104,7 +99,7 @@ abstract class BaseIntegrationTest {
     @AfterEach
     fun cleanup() {
         runBlocking {
-            permissionRepository.deleteAll().awaitFirstOrNull()
+            permissionRepository.deleteAll()
         }
     }
 
@@ -158,8 +153,8 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
         // then
         assertEquals(returned.size, 2)
 
-        assertEquals(permissionRepository.findAll().asFlow().count(), 2)
-        val saved = permissionRepository.findAll().asFlow().toList()
+        assertEquals(permissionRepository.findAll().count(), 2)
+        val saved = permissionRepository.findAll().toList()
 
         assertEquals(saved[0].name, aPermission.name)
         assertEquals(saved[0].description, aPermission.description)
@@ -186,7 +181,7 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
         // then
         assertEquals(returned.size, 2)
 
-        val saved = permissionRepository.findAll().asFlow().toList()
+        val saved = permissionRepository.findAll().toList()
         assertEquals(saved.size, 2)
 
         assertEquals(saved[0].uuid, aPermission.uuid)
@@ -222,7 +217,7 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
 
         assertEquals(changedReturned.size, 2)
 
-        val changedSaved = permissionRepository.findAll().asFlow().toList()
+        val changedSaved = permissionRepository.findAll().toList()
         assertEquals(changedSaved.size, 2)
 
         assertEquals(changedSaved[0].id, changedPermission.id)
@@ -250,7 +245,7 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
 class PermissionTest : BaseIntegrationTest(), PermissionFixture {
 
     @Test
-    fun shouldReturnEmptyPermissionResponse() = runTest {
+    fun `should return empty permission response when no permission created`() = runTest {
         webTestClient.get().uri("/permissions")
             .exchange()
             .expectStatus().isOk()
@@ -258,9 +253,9 @@ class PermissionTest : BaseIntegrationTest(), PermissionFixture {
     }
 
     @Test
-    fun shouldRetrievePermission() = runTest {
+    fun `should retrieve permission`() = runTest {
         val aPermission = aPermission()
-        permissionRepository.save(aPermission).awaitSingle()
+        permissionRepository.save(aPermission)
 
         webTestClient.get().uri("/permissions")
             .exchange()
@@ -271,17 +266,38 @@ class PermissionTest : BaseIntegrationTest(), PermissionFixture {
     }
 
     @Test
-    fun shouldPersistPermission() = runTest {
+    fun `should persist permission via POST operation and get it`() = runTest {
+        // given
         val aPermissionDto = aPermissionDto()
 
+        // when
         webTestClient.post().uri("/permissions")
             .body(BodyInserters.fromValue(aPermissionDto))
             .exchange()
             .expectStatus().isOk
 
-        assertEquals(permissionRepository.findAll().asFlow().count(), 1)
-        assertEquals(permissionRepository.findAll().asFlow().first().name, aPermissionDto.name)
-        assertEquals(permissionRepository.findAll().asFlow().first().description, aPermissionDto.description)
+        // then
+        assertEquals(permissionRepository.findAll().count(), 1)
+        assertEquals(permissionRepository.findAll().first().name, aPermissionDto.name)
+        assertEquals(permissionRepository.findAll().first().description, aPermissionDto.description)
+    }
+
+    @Test
+    fun `should persist permission via POST and return count`() = runTest {
+        // given
+        val aPermissionDto = aPermissionDto()
+
+        // when
+        webTestClient.post().uri("/permissions")
+            .body(BodyInserters.fromValue(aPermissionDto))
+            .exchange()
+            .expectStatus().isOk
+
+        // then
+        webTestClient.get().uri("/permissions/count")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<Long>().isEqualTo(1L)
     }
 }
 
@@ -293,14 +309,17 @@ class PermissionTestMockk : BaseIntegrationTest() {
 
     @BeforeEach
     fun initMockkRepository() {
-        every { permissionRepositoryMock.deleteAll() }.answers { Mono.empty<Void>() }
+        coEvery { permissionRepositoryMock.deleteAll() }.answers { }
     }
 
     @Test
     fun shouldPersistAndRetrievePermission() = runTest {
         val aPermission = aPermission()
 
-        every { permissionRepositoryMock.findBy(any<Pageable>()) }.answers { listOf(aPermission).toFlux() }
+        coEvery { permissionRepositoryMock.findBy(
+            search = any<PermissionController.PermissionSearch>(),
+            pageable = any<Pageable>()
+        ) }.answers { listOf(aPermission).asFlow() }
 
         webTestClient.get().uri("/permissions")
             .exchange()

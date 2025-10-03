@@ -1,25 +1,18 @@
 package com.softeno.template.app.permission.api
 
 import com.softeno.template.app.common.PrincipalHandler
-import com.softeno.template.app.permission.db.getPageRequest
 import com.softeno.template.app.permission.mapper.PermissionDto
 import com.softeno.template.app.permission.service.PermissionService
 import io.micrometer.tracing.Tracer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.apache.commons.logging.LogFactory
 import org.slf4j.MDC
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
-import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 import reactor.core.publisher.Mono
 import java.security.Principal
 
@@ -31,11 +24,24 @@ class PermissionController(
 ) : PrincipalHandler {
     private val log = LogFactory.getLog(javaClass)
 
+    data class PermissionSearch(
+        val search: String?,
+        val createdBy: String?,
+        val createdFrom: Long?,
+        val createdTo: Long?
+    )
+
     @GetMapping("/permissions")
-    suspend fun getPermissions(@RequestParam(required = false, defaultValue = "0") page: Int,
-                       @RequestParam(required = false, defaultValue = "10") size: Int,
-                       @RequestParam(required = false, defaultValue = "id") sort: String,
-                       @RequestParam(required = false, defaultValue = "ASC") direction: String, monoPrincipal: Mono<Principal>
+    suspend fun getPermissions(
+        @RequestParam(required = false, defaultValue = "0") page: Int,
+        @RequestParam(required = false, defaultValue = "10") size: Int,
+        @RequestParam(required = false, defaultValue = "id") sort: String,
+        @RequestParam(required = false, defaultValue = "ASC") direction: String,
+        @RequestParam(required = false) search: String? = null,
+        @RequestParam(required = false) createdBy: String? = null,
+        @RequestParam(required = false) createdFrom: Long? = null,
+        @RequestParam(required = false) createdTo: Long? = null,
+        monoPrincipal: Mono<Principal>
     ): Flow<PermissionDto> {
         showPrincipal(log, monoPrincipal)
 
@@ -45,7 +51,25 @@ class PermissionController(
         val mdcSpan = MDC.get("spanId")
         log.debug("Show traceId=$traceId, mdcTraceId=$mdc and mdcSpanId=$mdcSpan")
 
-        return permissionService.getAllPermissions(getPageRequest(page, size, sort, direction))
+        log.debug("Show request params: " +
+                "page=$page, size=$size, sort=$sort, direction=$direction, " +
+                "search=$search, createdBy=$createdBy, createdFrom=$createdFrom, createdTo=$createdTo"
+        )
+
+        return permissionService.getAllPermissions(
+            getPageRequest(page, size, sort, direction),
+            PermissionSearch(search, createdBy, createdFrom, createdTo)
+        )
+    }
+
+    @GetMapping("/permissions/count")
+    suspend fun getPermissionsCount(
+        @RequestParam(required = false) search: String? = null,
+        @RequestParam(required = false) createdBy: String? = null,
+        @RequestParam(required = false) createdFrom: Long? = null,
+        @RequestParam(required = false) createdTo: Long? = null,
+    ): Long {
+        return permissionService.countPermissions(PermissionSearch(search, createdBy, createdFrom, createdTo))
     }
 
     @GetMapping("/permissions/{id}")
@@ -62,7 +86,11 @@ class PermissionController(
     }
 
     @PutMapping("/permissions/{id}")
-    suspend fun updatePermission(@PathVariable id: Long, @RequestBody permissionDto: PermissionDto, monoPrincipal: Mono<Principal>): ResponseEntity<PermissionDto> {
+    suspend fun updatePermission(
+        @PathVariable id: Long,
+        @RequestBody permissionDto: PermissionDto,
+        monoPrincipal: Mono<Principal>
+    ): ResponseEntity<PermissionDto> {
         val result = permissionService.updatePermission(id, permissionDto, principal = monoPrincipal.awaitSingle())
         return ResponseEntity.ok(result)
     }
@@ -72,3 +100,7 @@ class PermissionController(
         permissionService.deletePermission(id)
     }
 }
+
+fun getPageRequest(page: Int, size: Int, sort: String, direction: String) =
+    Sort.by(Sort.Order(if (direction == "ASC") Sort.Direction.ASC else Sort.Direction.DESC, sort))
+        .let { PageRequest.of(page, size, it) }
