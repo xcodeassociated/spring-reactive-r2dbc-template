@@ -26,7 +26,7 @@ repositories {
 
 ext {
 	set('springCloudVersion', '2025.0.0')
-	set('testcontainersVersion', '1.21.3')
+	set('testcontainersVersion', '2.0.3')
 }
 
 dependencies {
@@ -120,6 +120,9 @@ liquibase {
 		main {
 			changeLogFile "src/main/resources/db/db.changelog.yml"
 			url "jdbc:postgresql://localhost:5432/application"
+			referenceUrl "jdbc:postgresql://localhost:5432/application"
+			referenceUsername "admin"
+			referencePassword "admin"
 			username "admin"
 			password "admin"
 			driver 'org.postgresql.Driver'
