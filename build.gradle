@@ -1,18 +1,27 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+buildscript {
+	dependencies {
+		classpath "org.liquibase:liquibase-core:4.33.0"
+	}
+}
 
 plugins {
-	id 'org.springframework.boot' version '3.5.6'
+	id 'org.springframework.boot' version '3.5.10'
 	id 'io.spring.dependency-management' version '1.1.7'
-	id 'org.jetbrains.kotlin.jvm' version '2.0.20'
-	id 'org.jetbrains.kotlin.plugin.spring' version '2.0.20'
-	id "org.liquibase.gradle" version "2.2.1"
+	id 'org.jetbrains.kotlin.jvm' version '2.2.21'
+	id 'org.jetbrains.kotlin.plugin.spring' version '2.2.21'
+	id "org.liquibase.gradle" version "3.1.0"
 	id "com.google.osdetector" version "1.7.3"
 	id 'groovy'
 }
 
 group = 'com.softeno'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '21'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(24)
+	}
+}
 
 configurations {
 	compileOnly {
@@ -25,7 +34,7 @@ repositories {
 }
 
 ext {
-	set('springCloudVersion', '2025.0.0')
+	set('springCloudVersion', '2025.0.1')
 	set('testcontainersVersion', '2.0.3')
 }
 
@@ -50,12 +59,12 @@ dependencies {
 	testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test'
 	testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
 	testImplementation 'io.projectreactor:reactor-test'
-	testImplementation 'io.mockk:mockk:1.14.5'
+	testImplementation 'io.mockk:mockk:1.14.9'
 	testImplementation 'com.ninja-squad:springmockk:4.0.2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
 	// wiremock
-	testImplementation 'org.wiremock:wiremock-standalone:3.13.1'
+	testImplementation 'org.wiremock:wiremock-standalone:3.13.2'
 
 	// monitoring
 	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
@@ -78,11 +87,11 @@ dependencies {
 	liquibaseRuntime 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
 	liquibaseRuntime 'org.jetbrains.kotlin:kotlin-reflect'
 	liquibaseRuntime 'org.liquibase.ext:liquibase-postgresql:4.33.0'
-	liquibaseRuntime 'org.postgresql:postgresql:42.7.8'
-	liquibaseRuntime 'ch.qos.logback:logback-core:1.5.18'
-	liquibaseRuntime 'ch.qos.logback:logback-classic:1.5.18'
+	liquibaseRuntime 'org.postgresql:postgresql:42.7.10'
+	liquibaseRuntime 'ch.qos.logback:logback-core:1.5.30'
+	liquibaseRuntime 'ch.qos.logback:logback-classic:1.5.30'
 	liquibaseRuntime 'info.picocli:picocli:4.7.7'
-	liquibaseRuntime "org.springframework.boot:spring-boot-starter-data-r2dbc:3.5.6"
+	liquibaseRuntime 'org.springframework.boot:spring-boot-starter-data-r2dbc:3.5.10'
 	liquibaseRuntime sourceSets.main.output
 
 	// spring security
@@ -100,13 +109,13 @@ dependencies {
 	implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-reactor-resilience4j'
 
 	// macOs ARM only
-    if (osdetector.classifier == "osx-aarch_64") {
-        runtimeOnly("io.netty:netty-resolver-dns-native-macos:4.2.3.Final:${osdetector.classifier}")
-    }
+	if (osdetector.classifier == "osx-aarch_64") {
+		runtimeOnly("io.netty:netty-resolver-dns-native-macos:4.2.3.Final:${osdetector.classifier}")
+	}
 
 	// springdoc
-	implementation 'org.springdoc:springdoc-openapi-starter-common:2.8.13'
-	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.13'
+	implementation 'org.springdoc:springdoc-openapi-starter-common:2.8.15'
+	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.15'
 
 	// zipkin
 	implementation 'io.micrometer:micrometer-tracing-bridge-otel'
@@ -118,7 +127,7 @@ dependencies {
 liquibase {
 	activities {
 		main {
-			changeLogFile "src/main/resources/db/db.changelog.yml"
+			changelogFile "src/main/resources/db/db.changelog.yml"
 			url "jdbc:postgresql://localhost:5432/application"
 			referenceUrl "jdbc:postgresql://localhost:5432/application"
 			referenceUsername "admin"
@@ -126,6 +135,8 @@ liquibase {
 			username "admin"
 			password "admin"
 			driver 'org.postgresql.Driver'
+			difftypes 'data'
+			logLevel "info"
 		}
 	}
 }
@@ -137,10 +148,9 @@ dependencyManagement {
 	}
 }
 
-tasks.withType(KotlinCompile) {
-	kotlinOptions {
-		freeCompilerArgs = ['-Xjsr305=strict']
-		jvmTarget = '21'
+kotlin {
+	compilerOptions {
+		freeCompilerArgs.addAll '-Xjsr305=strict', '-Xannotation-default-target=param-property'
 	}
 }
 

@@ -1,7 +1,7 @@
 ### Permissions
 
 ###
-GET {{host}}/permissions?page=0&size=10&sort=id&direction=DESC&search=test&createdFrom=1759429679915&createdBy=78652bda-8e80-432b-ba1b-47b4f7ee98e6
+GET {{host}}/permissions?page=0&size=10&sort=id&direction=DESC
 Authorization: Bearer {{oauthToken}}
 
 ###
