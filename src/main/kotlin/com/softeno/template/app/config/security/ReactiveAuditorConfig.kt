@@ -17,8 +17,8 @@ class AuditorAwareImpl : ReactiveAuditorAware<String> {
 
     override fun getCurrentAuditor(): Mono<String> {
         return ReactiveSecurityContextHolder.getContext()
-            .map(SecurityContext::getAuthentication)
-            .map(Authentication::getPrincipal)
+            .mapNotNull(SecurityContext::getAuthentication)
+            .mapNotNull(Authentication::getPrincipal)
             .switchIfEmpty(Mono.just("anonymous"))
             .flatMap { principal ->
                 if (principal is Jwt) {
