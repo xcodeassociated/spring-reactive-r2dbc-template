@@ -3,13 +3,14 @@ package com.softeno.template.app.kafka.config
 import com.fasterxml.jackson.databind.JsonNode
 import com.softeno.template.app.kafka.dto.KafkaMessage
 import io.micrometer.observation.ObservationRegistry
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties
 import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.kafka.autoconfigure.KafkaProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.kafka.core.reactive.ReactiveKafkaConsumerTemplate
-import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory
+import org.springframework.kafka.core.DefaultKafkaProducerFactory
+import org.springframework.kafka.core.KafkaTemplate
+import org.springframework.kafka.core.ProducerFactory
 import org.springframework.kafka.support.converter.ByteArrayJsonMessageConverter
 import org.springframework.kafka.support.converter.JsonMessageConverter
 import reactor.kafka.receiver.ReceiverOptions
@@ -31,15 +32,15 @@ class JsonMessageConverterConfig {
 }
 
 @Configuration
-class ReactiveKafkaSampleConsumerConfig {
-    @Bean(value = ["kafkaSampleOptions"])
+class KafkaConsumerConfig {
+    @Bean
     fun kafkaReceiverOptions(
         kafkaProperties: KafkaProperties,
         props: KafkaApplicationProperties,
         observationRegistry: ObservationRegistry
     ): ReceiverOptions<String, JsonNode> {
         val basicReceiverOptions: ReceiverOptions<String, JsonNode> =
-            ReceiverOptions.create(kafkaProperties.buildConsumerProperties(null))
+            ReceiverOptions.create(kafkaProperties.buildConsumerProperties())
         val basicReceiverOptionsWithObs = basicReceiverOptions
             // todo: make better observation handling by reactive kafka, currently the zipkin does not show the traces properly
             .withObservation(observationRegistry, KafkaReceiverObservation.DefaultKafkaReceiverObservationConvention()
@@ -47,38 +48,43 @@ class ReactiveKafkaSampleConsumerConfig {
         return basicReceiverOptionsWithObs.subscription(Collections.singletonList(props.rx))
     }
 
-    @Bean(value = ["kafkaSampleConsumerTemplate"])
-    fun reactiveKafkaConsumerTemplate(@Qualifier(value = "kafkaSampleOptions") kafkaReceiverOptions: ReceiverOptions<String, JsonNode>): ReactiveKafkaConsumerTemplate<String, JsonNode> {
-        return ReactiveKafkaConsumerTemplate(kafkaReceiverOptions)
+    @Bean
+    fun kafkaConsumerTemplate(kafkaReceiverOptions: ReceiverOptions<String, JsonNode>): DefaultKafkaConsumerFactory<String, JsonNode> {
+        return DefaultKafkaConsumerFactory(kafkaReceiverOptions.consumerProperties())
     }
 }
 
 @Configuration
-class ReactiveKafkaSampleProducerConfig {
-    @Bean(value = ["kafkaSampleProducerTemplate"])
-    fun reactiveKafkaProducerTemplate(properties: KafkaProperties, observationRegistry: ObservationRegistry): ReactiveKafkaProducerTemplate<String, KafkaMessage> {
-        val props = properties.buildProducerProperties(null)
+class KafkaProducerConfig {
+    @Bean
+    fun kafkaProducerTemplate(properties: KafkaProperties, observationRegistry: ObservationRegistry): ProducerFactory<String, KafkaMessage> {
+        val props = properties.buildProducerProperties()
         val options = SenderOptions.create<String, KafkaMessage>(props)
             // todo: make better observation handling by reactive kafka, currently the zipkin does not show the traces properly
             .withObservation(observationRegistry, KafkaSenderObservation.DefaultKafkaSenderObservationConvention())
-        return ReactiveKafkaProducerTemplate<String, KafkaMessage>(options)
+        return DefaultKafkaProducerFactory(options.producerProperties())
+    }
+
+    @Bean
+    fun kafkaTemplate(producerFactory: ProducerFactory<String, KafkaMessage>): KafkaTemplate<String, KafkaMessage> {
+        return KafkaTemplate(producerFactory)
     }
 }
 
-@Configuration
-class ReactiveKafkaKeycloakConsumerConfig {
-    @Bean(value = ["kafkaKeycloakOptions"])
-    fun kafkaReceiverOptions(
-        kafkaProperties: KafkaProperties,
-        props: KafkaApplicationProperties
-    ): ReceiverOptions<String, JsonNode> {
-        val basicReceiverOptions: ReceiverOptions<String, JsonNode> =
-            ReceiverOptions.create(kafkaProperties.buildConsumerProperties(null))
-        return basicReceiverOptions.subscription(Collections.singletonList(props.keycloak))
-    }
-
-    @Bean(value = ["kafkaKeycloakConsumerTemplate"])
-    fun reactiveKafkaConsumerTemplate(@Qualifier(value = "kafkaKeycloakOptions") kafkaReceiverOptions: ReceiverOptions<String, JsonNode>): ReactiveKafkaConsumerTemplate<String, JsonNode> {
-        return ReactiveKafkaConsumerTemplate(kafkaReceiverOptions)
-    }
-}
+//@Configuration
+//class ReactiveKafkaKeycloakConsumerConfig {
+//    @Bean(value = ["kafkaKeycloakOptions"])
+//    fun kafkaReceiverOptions(
+//        kafkaProperties: KafkaProperties,
+//        props: KafkaApplicationProperties
+//    ): ReceiverOptions<String, JsonNode> {
+//        val basicReceiverOptions: ReceiverOptions<String, JsonNode> =
+//            ReceiverOptions.create(kafkaProperties.buildConsumerProperties())
+//        return basicReceiverOptions.subscription(Collections.singletonList(props.keycloak))
+//    }
+//
+//    @Bean(value = ["kafkaKeycloakConsumerTemplate"])
+//    fun kafkaConsumerTemplate(@Qualifier(value = "kafkaKeycloakOptions") kafkaReceiverOptions: ReceiverOptions<String, JsonNode>): DefaultKafkaConsumerFactory<String, JsonNode> {
+//        return DefaultKafkaConsumerFactory(kafkaReceiverOptions.consumerProperties())
+//    }
+//}

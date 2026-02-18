@@ -3,11 +3,9 @@ package com.softeno.template.app.permission.api
 import com.softeno.template.app.common.PrincipalHandler
 import com.softeno.template.app.permission.mapper.PermissionDto
 import com.softeno.template.app.permission.service.PermissionService
-import io.micrometer.tracing.Tracer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactor.awaitSingle
 import org.apache.commons.logging.LogFactory
-import org.slf4j.MDC
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.ResponseEntity
@@ -20,7 +18,7 @@ import java.security.Principal
 @Validated
 class PermissionController(
     private val permissionService: PermissionService,
-    private val tracer: Tracer
+//    private val tracer: Tracer
 ) : PrincipalHandler {
     private val log = LogFactory.getLog(javaClass)
 
@@ -46,10 +44,10 @@ class PermissionController(
         showPrincipal(log, monoPrincipal)
 
         // debug only
-        val traceId = tracer.currentSpan()?.context()?.traceId()
-        val mdc = MDC.get("traceId")
-        val mdcSpan = MDC.get("spanId")
-        log.debug("Show traceId=$traceId, mdcTraceId=$mdc and mdcSpanId=$mdcSpan")
+//        val traceId = tracer.currentSpan()?.context()?.traceId()
+//        val mdc = MDC.get("traceId")
+//        val mdcSpan = MDC.get("spanId")
+//        log.debug("Show traceId=$traceId, mdcTraceId=$mdc and mdcSpanId=$mdcSpan")
 
         log.debug("Show request params: " +
                 "page=$page, size=$size, sort=$sort, direction=$direction, " +

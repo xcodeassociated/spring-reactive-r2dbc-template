@@ -39,12 +39,11 @@ class WebClientConfig {
     fun buildWebClient(
         config: ExternalClientConfig,
         authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
-        builder: WebClient.Builder
     ): WebClient {
         val oauth = ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
         oauth.setDefaultClientRegistrationId("keycloak")
 
-        return builder
+        return WebClient.builder()
             .filter(oauth)
             .baseUrl(config.url)
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)

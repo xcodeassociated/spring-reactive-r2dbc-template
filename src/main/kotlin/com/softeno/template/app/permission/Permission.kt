@@ -1,12 +1,17 @@
 package com.softeno.template.app.permission
 
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 import org.springframework.data.annotation.*
 import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
 import java.util.*
 
 open class BaseEntity(
+    @Transient
     open val uuid: UUID,
+
+    @Transient
     open var id: Long? = null,
 )
 
@@ -39,9 +44,11 @@ data class Permission(
     @Column(value = "version")
     val version: Long = 0,
 
+    @NotBlank
     @Column(value = "name")
     val name: String,
 
+    @NotNull
     @Column(value = "description")
     val description: String
 ) : BaseEntity(uuid) {
