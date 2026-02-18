@@ -86,6 +86,7 @@ dependencies {
 	testImplementation "org.testcontainers:testcontainers-junit-jupiter:${testcontainersVersion}"
 	testImplementation "org.testcontainers:testcontainers-postgresql:${testcontainersVersion}"
 	testImplementation "org.testcontainers:testcontainers-r2dbc:${testcontainersVersion}"
+	testImplementation "org.testcontainers:testcontainers-kafka:${testcontainersVersion}"
 
 	// liquibase
 	implementation "org.springframework.boot:spring-boot-starter-liquibase:${springBootVersion}"

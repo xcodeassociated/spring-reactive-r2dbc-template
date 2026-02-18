@@ -11,7 +11,7 @@ import org.springframework.stereotype.Controller
 class KafkaKeycloakController {
     private val log = LogFactory.getLog(javaClass)
 
-    @KafkaListener(id = "kafka-keycloak", topics = ["keycloak-events"])
+    @KafkaListener(id = "\${spring.kafka.consumer.group-id}-keycloak", topics = ["\${com.softeno.kafka.keycloak}"])
     fun listen1(record: ConsumerRecord<String, JsonNode>) {
         log.info("[kafka] rx keycloak: ${record.key()}: ${record.value()}")
     }

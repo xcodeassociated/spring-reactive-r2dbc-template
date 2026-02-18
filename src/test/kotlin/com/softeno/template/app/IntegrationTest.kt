@@ -42,7 +42,9 @@ import org.springframework.test.web.reactive.server.expectBody
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
 import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.kafka.KafkaContainer
 import org.testcontainers.postgresql.PostgreSQLContainer
+import org.testcontainers.utility.DockerImageName
 
 @SpringBootTest(
     classes = [SoftenoMvcJpaApp::class],
@@ -64,6 +66,13 @@ abstract class BaseIntegrationTest {
 
     companion object {
         @Container
+        var kafka: KafkaContainer = KafkaContainer("apache/kafka-native:3.8.0")
+            .withEnv("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
+            .withEnv("ALLOW_PLAINTEXT_LISTENER", "true")
+            .withEnv("KAFKA_CREATE_TOPICS", "sample_topic_2" + ":1:1")
+
+
+        @Container
         var postgreSQLContainer = PostgreSQLContainer("postgres:16-alpine")
             .withDatabaseName("application")
             .withUsername("admin")
@@ -73,6 +82,11 @@ abstract class BaseIntegrationTest {
         @JvmStatic
         @DynamicPropertySource
         fun registerDynamicProperties(registry: DynamicPropertyRegistry) {
+            kafka.start()
+            registry.add("spring.kafka.bootstrap-servers") {
+                kafka.bootstrapServers
+            }
+
             postgreSQLContainer.start()
 
             registry.add("spring.liquibase.url") {
@@ -89,6 +103,7 @@ abstract class BaseIntegrationTest {
             registry.add("spring.r2dbc.username") { postgreSQLContainer.username }
             registry.add("spring.r2dbc.password") { postgreSQLContainer.password }
         }
+
     }
 
     @BeforeEach
