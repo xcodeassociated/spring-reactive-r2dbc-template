@@ -78,9 +78,6 @@ dependencies {
 	runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
 	implementation "org.springframework.boot:spring-boot-starter-actuator:${springBootVersion}"
 
-	// elk
-	implementation 'net.logstash.logback:logstash-logback-encoder:8.1'
-
 	// testcontainers
 	testImplementation "org.springframework.boot:spring-boot-testcontainers:${springBootVersion}"
 	testImplementation "org.testcontainers:testcontainers-junit-jupiter:${testcontainersVersion}"
@@ -128,16 +125,10 @@ dependencies {
 	implementation 'org.springdoc:springdoc-openapi-starter-common:3.0.1'
 	implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:3.0.1'
 
-	// zipkin
-//	implementation "org.springframework.boot:spring-boot-starter-zipkin:${springBootVersion}"
-//	testImplementation "org.springframework.boot:spring-boot-starter-zipkin-test:${springBootVersion}"
-//	implementation "org.springframework.boot:spring-boot-starter-opentelemetry:${springBootVersion}"
-//	testImplementation "org.springframework.boot:spring-boot-starter-opentelemetry-test:${springBootVersion}"
-//
-//	implementation 'io.micrometer:micrometer-tracing-bridge-otel'
-//	implementation 'io.opentelemetry:opentelemetry-exporter-zipkin'
-//	implementation 'io.zipkin.reporter2:zipkin-sender-urlconnection'
-
+	// opentelemetry
+	implementation "org.springframework.boot:spring-boot-starter-opentelemetry:${springBootVersion}"
+	testImplementation "org.springframework.boot:spring-boot-starter-opentelemetry-test:${springBootVersion}"
+	implementation "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.25.0-alpha"
 }
 
 liquibase {
