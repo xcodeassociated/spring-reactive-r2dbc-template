@@ -44,7 +44,6 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.kafka.KafkaContainer
 import org.testcontainers.postgresql.PostgreSQLContainer
-import org.testcontainers.utility.DockerImageName
 
 @SpringBootTest(
     classes = [SoftenoMvcJpaApp::class],

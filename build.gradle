@@ -43,6 +43,7 @@ repositories {
 dependencies {
 	implementation "org.springframework.boot:spring-boot-starter-data-r2dbc:${springBootVersion}"
 	implementation "org.springframework.boot:spring-boot-starter-webflux:${springBootVersion}"
+	implementation "org.springframework.boot:spring-boot-starter-webclient:${springBootVersion}"
 	implementation "org.springframework.boot:spring-boot-r2dbc:${springBootVersion}"
 	implementation 'org.springframework:spring-jdbc'
 	runtimeOnly 'org.postgresql:r2dbc-postgresql'
@@ -129,6 +130,8 @@ dependencies {
 	implementation "org.springframework.boot:spring-boot-starter-opentelemetry:${springBootVersion}"
 	testImplementation "org.springframework.boot:spring-boot-starter-opentelemetry-test:${springBootVersion}"
 	implementation "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.25.0-alpha"
+	implementation "io.micrometer:micrometer-tracing-bridge-otel"
+	implementation "io.micrometer:context-propagation"
 }
 
 liquibase {
