@@ -53,7 +53,7 @@ class PermissionService(
     suspend fun createPermission(permissionDto: PermissionDto): PermissionDto =
         withContext(MDCContext()) {
             val created = permissionRepository.save(Permission(name = permissionDto.name, description = permissionDto.description)).toDto()
-            kafkaProducer.send(KafkaMessage(content = "CREATED_PREMISSION: ${created.id}", traceId = MDC.get("traceId"), spanId = MDC.get("spanId")))
+            kafkaProducer.send(KafkaMessage(content = "CREATED_PREMISSION: ${created.id}"))
             return@withContext created
         }
 

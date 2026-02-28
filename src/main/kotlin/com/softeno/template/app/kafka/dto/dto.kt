@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class KafkaMessage(val content: String, val traceId: String? = null, val spanId: String? = null)
+data class KafkaMessage(val content: String)
 
 enum class KeycloakEventType {
     LOGIN,
