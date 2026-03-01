@@ -70,7 +70,6 @@ abstract class BaseIntegrationTest {
             .withEnv("ALLOW_PLAINTEXT_LISTENER", "true")
             .withEnv("KAFKA_CREATE_TOPICS", "sample_topic_2" + ":1:1")
 
-
         @Container
         var postgreSQLContainer = PostgreSQLContainer("postgres:16-alpine")
             .withDatabaseName("application")
@@ -124,6 +123,7 @@ class ContextLoadsTest : BaseIntegrationTest() {
     @Test
     fun testConnection() {
         assertTrue(postgreSQLContainer.isRunning)
+        assertTrue(kafka.isRunning)
     }
 }
 
