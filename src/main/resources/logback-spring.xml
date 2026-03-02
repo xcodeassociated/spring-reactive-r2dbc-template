@@ -31,6 +31,15 @@
     <appender name="OpenTelemetry" class="io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender">
     </appender>
 
+    <springProfile name="local">
+        <root level="info">
+            <appender-ref ref="Console"/>
+        </root>
+        <logger name="com.softeno" level="trace" additivity="false">
+            <appender-ref ref="Console"/>
+        </logger>
+    </springProfile>
+
     <springProfile name="dev">
         <root level="info">
             <appender-ref ref="Console"/>
