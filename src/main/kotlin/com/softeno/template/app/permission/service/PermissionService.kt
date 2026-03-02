@@ -1,7 +1,7 @@
 package com.softeno.template.app.permission.service
 
+import com.softeno.template.app.kafka.KafkaMessage
 import com.softeno.template.app.kafka.KafkaSampleProducer
-import com.softeno.template.app.kafka.dto.KafkaMessage
 import com.softeno.template.app.permission.Permission
 import com.softeno.template.app.permission.api.PermissionController
 import com.softeno.template.app.permission.db.PermissionRepository
@@ -14,7 +14,6 @@ import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.slf4j.MDCContext
 import kotlinx.coroutines.withContext
 import org.apache.commons.logging.LogFactory
-import org.slf4j.MDC
 import org.springframework.data.domain.Pageable
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.data.relational.core.query.Criteria.where

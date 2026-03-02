@@ -1,7 +1,7 @@
 package com.softeno.template.app.kafka
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.JsonNode
-import com.softeno.template.app.kafka.dto.KafkaMessage
 import org.apache.commons.logging.LogFactory
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.springframework.boot.context.properties.ConfigurationProperties
@@ -20,7 +20,7 @@ class KafkaSampleController(
     private val log = LogFactory.getLog(javaClass)
 
     @KafkaListener(id = "\${spring.kafka.consumer.group-id}", topics = ["\${com.softeno.kafka.rx}"])
-    fun listen1(record: ConsumerRecord<String, JsonNode>) {
+    fun listen(record: ConsumerRecord<String, JsonNode>) {
         log.info("[kafka] rx (${props.rx}): ${record.key()}: ${record.value()}")
     }
 }
@@ -37,3 +37,6 @@ class KafkaSampleProducer(
         producer.send(props.tx, message)
     }
 }
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class KafkaMessage(val content: String)
