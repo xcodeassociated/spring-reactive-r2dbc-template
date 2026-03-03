@@ -39,6 +39,7 @@ ext {
 	set('nettyResolverDnsNativeMacosVersion', '4.2.3.Final')
 	set('springGrpcVersion', "1.0.2")
 	set('grpcServicesVersion', '1.79.0')
+	set('grpcKotlinVersion', '1.5.0')
 }
 
 group = 'com.softeno'
@@ -153,8 +154,8 @@ dependencies {
 
 	// grpc
 	implementation "io.grpc:grpc-services:${grpcServicesVersion}"
-	implementation "io.grpc:protoc-gen-grpc-kotlin:1.5.0"
-	implementation "io.grpc:grpc-kotlin-stub:1.5.0"
+	implementation "io.grpc:protoc-gen-grpc-kotlin:${grpcKotlinVersion}"
+	implementation "io.grpc:grpc-kotlin-stub:${grpcKotlinVersion}"
 	implementation "org.springframework.grpc:spring-grpc-spring-boot-starter:${springGrpcVersion}"
 	testImplementation "org.springframework.grpc:spring-grpc-test:${springGrpcVersion}"
 }
@@ -203,7 +204,7 @@ protobuf {
 			artifact = 'io.grpc:protoc-gen-grpc-java'
 		}
 		grpckt {
-			artifact = 'io.grpc:protoc-gen-grpc-kotlin:1.5.0:jdk8@jar'
+			artifact = "io.grpc:protoc-gen-grpc-kotlin:${grpcKotlinVersion}:jdk8@jar"
 		}
 	}
 	generateProtoTasks {
