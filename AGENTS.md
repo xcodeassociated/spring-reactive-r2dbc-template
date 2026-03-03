@@ -34,10 +34,10 @@
 ---
 ## Project Overview
 - **Preference**: Prefer Kotlin coroutines over Project Reactor for asynchronous handling. Agents should convert reactive streams to coroutines where feasible, while maintaining back‑pressure support.
-- **Language**: Kotlin 1.9 (JVM target)
+- **Language**: Kotlin 2.2.21 (JVM target)
 - **Framework**: Spring Boot 4.x (reactive stack)
 - **Database**: R2DBC (PostgreSQL) with Flyway migrations
-- **Messaging**: Kafka (reactive client)
+- **Messaging**: Kafka
 - **Testing**: JUnit 5, Kotest, MockK, Spring Test, WebTestClient, Testcontainers
 - **Build Tool**: Gradle 8 (Kotlin DSL)
 - **Containerisation**: Docker & Docker‑Compose (Postgres)

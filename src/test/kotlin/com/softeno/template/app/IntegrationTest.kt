@@ -86,7 +86,6 @@ abstract class BaseIntegrationTest {
             }
 
             postgreSQLContainer.start()
-
             registry.add("spring.liquibase.url") {
                 "jdbc:postgresql://${postgreSQLContainer.host}:${postgreSQLContainer.firstMappedPort}/${postgreSQLContainer.databaseName}"
             }
