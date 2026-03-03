@@ -36,10 +36,10 @@
 - **Preference**: Prefer Kotlin coroutines over Project Reactor for asynchronous handling. Agents should convert reactive streams to coroutines where feasible, while maintaining back‑pressure support.
 - **Language**: Kotlin 2.2.21 (JVM target)
 - **Framework**: Spring Boot 4.x (reactive stack)
-- **Database**: R2DBC (PostgreSQL) with Flyway migrations
+- **Database**: R2DBC (PostgreSQL) with Liquibase migrations
 - **Messaging**: Kafka
 - **Testing**: JUnit 5, Kotest, MockK, Spring Test, WebTestClient, Testcontainers
-- **Build Tool**: Gradle 8 (Kotlin DSL)
+- **Build Tool**: Gradle 8 (Groovy DSL)
 - **Containerisation**: Docker & Docker‑Compose (Postgres)
 
 The codebase follows a **hexagonal / clean‑architecture** flavour – core domain logic lives in `src/main/kotlin/com/softeno/template/app/...` and adapters (web, db, kafka) are separate packages.
