@@ -17,7 +17,7 @@ class KafkaKeycloakController(
     private val log = LogFactory.getLog(javaClass)
 
     @KafkaListener(id = "\${spring.kafka.consumer.group-id}-keycloak", topics = ["\${com.softeno.kafka.keycloak}"])
-    fun listen(record: ConsumerRecord<String, JsonNode>) {
+    suspend fun listen(record: ConsumerRecord<String, JsonNode>) {
         log.debug("[kafka] rx keycloak raw: ${record.key()}: ${record.value()}")
         val dto: KeycloakUserEvent = objectMapper.readValue(record.value().toString(), KeycloakUserEvent::class.java)
         log.info("[kafka] rx keycloak mapped: $dto")

@@ -20,7 +20,7 @@ class KafkaSampleController(
     private val log = LogFactory.getLog(javaClass)
 
     @KafkaListener(id = "\${spring.kafka.consumer.group-id}", topics = ["\${com.softeno.kafka.rx}"])
-    fun listen(record: ConsumerRecord<String, JsonNode>) {
+    suspend fun listen(record: ConsumerRecord<String, JsonNode>) {
         log.info("[kafka] rx (${props.rx}): ${record.key()}: ${record.value()}")
     }
 }
