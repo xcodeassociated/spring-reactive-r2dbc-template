@@ -12,7 +12,6 @@ import org.springframework.data.relational.core.mapping.Table
 import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 import org.springframework.data.repository.query.Param
 import org.springframework.r2dbc.core.DatabaseClient
-import org.springframework.r2dbc.core.bind
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Repository
 import reactor.core.publisher.Mono
@@ -126,7 +125,13 @@ class BatchPermissionRepositoryImpl<T : BaseEntity>(private val databaseClient: 
         entities.forEachIndexed { idx, entity ->
             activeProps.forEach { (prop, _) ->
                 val value = (prop as KProperty1<T, *>).get(entity)
-                spec = spec.bind("${prop.name}$idx", value)
+                val paramName = "${prop.name}$idx"
+
+                spec = if (value != null) {
+                    spec.bind(paramName, value)
+                } else {
+                    spec.bindNull(paramName, Any::class.java)
+                }
             }
         }
 
@@ -140,27 +145,30 @@ class BatchPermissionRepositoryImpl<T : BaseEntity>(private val databaseClient: 
             throw OperationNotPermittedException("Cannot update entities with null id")
 
         val sample = entities.first()
+
         val tableName = sample::class.findAnnotation<Table>()?.value
-            ?: throw OperationNotPermittedException("Missing @Table annotation on ${sample::class.simpleName}")
+            ?: throw OperationNotPermittedException(
+                "Missing @Table annotation on ${sample::class.simpleName}"
+            )
 
         val properties = sample::class.memberProperties
             .filter { it.javaField?.isAnnotationPresent(Column::class.java) == true }
             .map { prop -> prop to prop.javaField!!.getAnnotation(Column::class.java).value }
             .filter { (_, colName) -> colName != "id" && colName != "uuid" }
 
-        val setClauses = properties.mapNotNull { (prop, colName) ->
+        if (properties.isEmpty()) return emptyMap()
+
+        val setClauses = properties.map { (prop, colName) ->
             val cases = entities.mapIndexed { idx, entity ->
                 val value = (prop as KProperty1<T, *>).get(entity)
-                if (value != null) {
+
+                if (value != null)
                     "WHEN :uuid$idx THEN :${prop.name}$idx"
-                } else null
-            }.filterNotNull()
-
-            if (cases.isEmpty()) null
-            else "$colName = CASE uuid ${cases.joinToString(" ")} ELSE $colName END"
+                else
+                    "WHEN :uuid$idx THEN NULL"
+            }
+            "$colName = CASE uuid ${cases.joinToString(" ")} ELSE $colName END"
         }
-
-        if (setClauses.isEmpty()) return emptyMap()
 
         val sql = """
         UPDATE $tableName
@@ -171,10 +179,12 @@ class BatchPermissionRepositoryImpl<T : BaseEntity>(private val databaseClient: 
 
         var spec = databaseClient.sql(sql)
 
+        // Bind only what actually exists in SQL
         entities.forEachIndexed { idx, entity ->
             spec = spec.bind("uuid$idx", entity.uuid)
             properties.forEach { (prop, _) ->
                 val value = (prop as KProperty1<T, *>).get(entity)
+
                 if (value != null) {
                     spec = spec.bind("${prop.name}$idx", value)
                 }

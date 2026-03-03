@@ -28,8 +28,8 @@ import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan
 import org.springframework.boot.context.properties.EnableConfigurationProperties
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.data.domain.Pageable
@@ -41,8 +41,10 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
-import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.kafka.KafkaContainer
+import org.testcontainers.postgresql.PostgreSQLContainer
+import org.testcontainers.utility.DockerImageName
 
 @SpringBootTest(
     classes = [SoftenoMvcJpaApp::class],
@@ -64,7 +66,13 @@ abstract class BaseIntegrationTest {
 
     companion object {
         @Container
-        var postgreSQLContainer = PostgreSQLContainer("postgres:16-alpine")
+        var kafka: KafkaContainer = KafkaContainer(DockerImageName.parse("apache/kafka-native:3.8.0"))
+            .withEnv("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "true")
+            .withEnv("ALLOW_PLAINTEXT_LISTENER", "true")
+            .withEnv("KAFKA_CREATE_TOPICS", "sample_topic_2" + ":1:1")
+
+        @Container
+        var postgreSQLContainer = PostgreSQLContainer(DockerImageName.parse("postgres:16-alpine"))
             .withDatabaseName("application")
             .withUsername("admin")
             .withPassword("admin")
@@ -73,8 +81,12 @@ abstract class BaseIntegrationTest {
         @JvmStatic
         @DynamicPropertySource
         fun registerDynamicProperties(registry: DynamicPropertyRegistry) {
-            postgreSQLContainer.start()
+            kafka.start()
+            registry.add("spring.kafka.bootstrap-servers") {
+                kafka.bootstrapServers
+            }
 
+            postgreSQLContainer.start()
             registry.add("spring.liquibase.url") {
                 "jdbc:postgresql://${postgreSQLContainer.host}:${postgreSQLContainer.firstMappedPort}/${postgreSQLContainer.databaseName}"
             }
@@ -89,6 +101,7 @@ abstract class BaseIntegrationTest {
             registry.add("spring.r2dbc.username") { postgreSQLContainer.username }
             registry.add("spring.r2dbc.password") { postgreSQLContainer.password }
         }
+
     }
 
     @BeforeEach
@@ -110,6 +123,7 @@ class ContextLoadsTest : BaseIntegrationTest() {
     @Test
     fun testConnection() {
         assertTrue(postgreSQLContainer.isRunning)
+        assertTrue(kafka.isRunning)
     }
 }
 
@@ -239,6 +253,57 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
         assertEquals(changedSaved[1].createdBy, changedAnotherPermission.createdBy)
         assertEquals(changedSaved[1].modifiedDate, changedAnotherPermission.modifiedDate)
         assertEquals(changedSaved[1].modifiedBy, changedAnotherPermission.modifiedBy)
+    }
+
+    @Test
+    fun `should allow batch update by setting null values to the props that were non-null before`() = runTest {
+        // given
+        val aPermission = aPermission(name = "1", description = "before change 1")
+            .copy(createdBy = "user 1", createdDate = 123456L, modifiedBy = "user 2", modifiedDate = 123456L, version = 0)
+
+        // when
+        val returned = permissionRepository.insertAllReturningIds(listOf(aPermission))
+        val aPermissionWithId = aPermission.copy(id = returned[aPermission])
+
+        // then
+        assertEquals(returned.size, 1)
+
+        val saved = permissionRepository.findAll().toList()
+        assertEquals(saved.size, 1)
+
+        assertEquals(saved[0].uuid, aPermission.uuid)
+        assertEquals(saved[0].name, aPermission.name)
+        assertEquals(saved[0].description, aPermission.description)
+        assertEquals(saved[0].uuid, aPermission.uuid)
+        assertEquals(saved[0].version, aPermission.version)
+        assertEquals(saved[0].createdDate, aPermission.createdDate)
+        assertEquals(saved[0].createdBy, aPermission.createdBy)
+        assertEquals(saved[0].modifiedBy, aPermission.modifiedBy)
+        assertEquals(saved[0].modifiedDate, aPermission.modifiedDate)
+
+
+        // when change
+        val changedPermission = aPermissionWithId.copy(description = "after change 1", modifiedDate = 1111111L, modifiedBy = null, createdBy = null, version = saved[0].version + 1)
+
+        val changedReturned = permissionRepository.updateAllReturningIds(listOf(changedPermission))
+
+        // then
+        assertEquals(changedPermission.uuid, saved[0].uuid)
+
+        assertEquals(changedReturned.size, 1)
+
+        val changedSaved = permissionRepository.findAll().toList()
+        assertEquals(changedSaved.size, 1)
+
+        assertEquals(changedSaved[0].id, changedPermission.id)
+        assertEquals(changedSaved[0].name, changedPermission.name)
+        assertEquals(changedSaved[0].description, changedPermission.description)
+        assertEquals(changedSaved[0].uuid, changedPermission.uuid)
+        assertEquals(changedSaved[0].version, changedPermission.version)
+        assertEquals(changedSaved[0].createdDate, changedPermission.createdDate)
+        assertEquals(changedSaved[0].createdBy, changedPermission.createdBy)
+        assertEquals(changedSaved[0].modifiedDate, changedPermission.modifiedDate)
+        assertEquals(changedSaved[0].modifiedBy, changedPermission.modifiedBy)
     }
 }
 

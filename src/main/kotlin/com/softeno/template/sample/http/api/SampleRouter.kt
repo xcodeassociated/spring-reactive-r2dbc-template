@@ -58,3 +58,5 @@ class SampleService {
     }
 
 }
+
+data class SampleResponseDto(val data: String)

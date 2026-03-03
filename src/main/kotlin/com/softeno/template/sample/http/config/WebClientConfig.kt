@@ -1,5 +1,6 @@
 package com.softeno.template.sample.http.config
 
+import io.micrometer.observation.ObservationRegistry
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -39,15 +40,17 @@ class WebClientConfig {
     fun buildWebClient(
         config: ExternalClientConfig,
         authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
-        builder: WebClient.Builder
+        webClient: WebClient.Builder,
+        registry: ObservationRegistry
     ): WebClient {
         val oauth = ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager)
         oauth.setDefaultClientRegistrationId("keycloak")
 
-        return builder
+        return webClient
             .filter(oauth)
             .baseUrl(config.url)
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .observationRegistry(registry)
             .build()
     }
 }

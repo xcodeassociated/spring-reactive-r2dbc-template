@@ -1,7 +1,7 @@
 package com.softeno.template.app.permission.service
 
-import com.softeno.template.app.kafka.ReactiveKafkaSampleProducer
-import com.softeno.template.app.kafka.dto.KafkaMessage
+import com.softeno.template.app.kafka.KafkaMessage
+import com.softeno.template.app.kafka.KafkaSampleProducer
 import com.softeno.template.app.permission.Permission
 import com.softeno.template.app.permission.api.PermissionController
 import com.softeno.template.app.permission.db.PermissionRepository
@@ -14,7 +14,6 @@ import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.slf4j.MDCContext
 import kotlinx.coroutines.withContext
 import org.apache.commons.logging.LogFactory
-import org.slf4j.MDC
 import org.springframework.data.domain.Pageable
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate
 import org.springframework.data.relational.core.query.Criteria.where
@@ -28,7 +27,7 @@ import java.time.Instant
 @Service
 class PermissionService(
     private val permissionRepository: PermissionRepository,
-    private val kafkaPublisher: ReactiveKafkaSampleProducer,
+    private val kafkaProducer: KafkaSampleProducer,
     private val template: R2dbcEntityTemplate
 ) {
     private val log = LogFactory.getLog(javaClass)
@@ -53,7 +52,7 @@ class PermissionService(
     suspend fun createPermission(permissionDto: PermissionDto): PermissionDto =
         withContext(MDCContext()) {
             val created = permissionRepository.save(Permission(name = permissionDto.name, description = permissionDto.description)).toDto()
-            kafkaPublisher.send(KafkaMessage(content = "CREATED_PREMISSION: ${created.id}", traceId = MDC.get("traceId"), spanId = MDC.get("spanId")))
+            kafkaProducer.send(KafkaMessage(content = "CREATED_PERMISSION: ${created.id}"))
             return@withContext created
         }
 
