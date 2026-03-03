@@ -44,6 +44,10 @@ client.global.set("permissionId", null)
 GET {{host}}/external/{{$random.integer(0, 1000)}}
 Authorization: Bearer {{oauthToken}}
 
+###
+GET {{host}}/external/grpc/{{$random.integer(0, 1000)}}
+Authorization: Bearer {{oauthToken}}
+
 ### sample-secured
 
 ###
