@@ -15,5 +15,15 @@ message SampleResponse {
 }
 
 service SampleGrpcService {
+  // Unary
   rpc Echo (SampleRequest) returns (SampleResponse) {}
+
+  // Server streaming
+  rpc EchoServerStream (SampleRequest) returns (stream SampleResponse) {}
+
+  // Client streaming
+  rpc EchoClientStream (stream SampleRequest) returns (SampleResponse) {}
+
+  // Bidirectional streaming
+  rpc EchoBidirectional (stream SampleRequest) returns (stream SampleResponse) {}
 }
