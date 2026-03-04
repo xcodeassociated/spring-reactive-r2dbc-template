@@ -52,13 +52,15 @@ class ExternalController(
 
     @GetMapping("/grpc/{data}")
     suspend fun getGrpcHandler(@PathVariable data: String): SampleResponseDto {
-        log.info("[external]: GET grpc: $data")
+        log.info("[external]: GET grpc request: $data")
 
         val response = stub.echo(
             SampleRequest.newBuilder()
                 .setData(data)
                 .build()
         ).data
+
+        log.info("[external]: received: $response")
 
         return SampleResponseDto(data = response)
     }

@@ -17,6 +17,8 @@ class SampleGrpcServiceImpl :
 
     // Unary
     override suspend fun echo(request: SampleRequest): SampleResponse {
+        log.info("[grpc]: echo: $request")
+
         return SampleResponse.newBuilder()
             .setData("Echo: ${request.data}")
             .build()
@@ -24,10 +26,15 @@ class SampleGrpcServiceImpl :
 
     // Server Streaming
     override fun echoServerStream(request: SampleRequest): Flow<SampleResponse> = flow {
+        log.info("[grpc]: echoServerStream [request]: $request")
+
         repeat(5) { index ->
+            val response = "Stream[$index]: ${request.data}"
+
+            log.info("[grpc]: echoServerStream [response]: $response")
             emit(
                 SampleResponse.newBuilder()
-                    .setData("Stream[$index]: ${request.data}")
+                    .setData(response)
                     .build()
             )
             delay(500) // simulate async work
@@ -43,6 +50,8 @@ class SampleGrpcServiceImpl :
             .toList()
             .joinToString(", ") { it.data }
 
+        log.info("[grpc]: echoClientStream [request]: $collected")
+
         return SampleResponse.newBuilder()
             .setData("Collected: $collected")
             .build()
@@ -54,12 +63,19 @@ class SampleGrpcServiceImpl :
     ): Flow<SampleResponse> = flow {
 
         requests.collect { incoming ->
+            log.info("[grpc]: echoBidirectional [request]: $incoming")
+
+            val requestData = "Reply: ${incoming.data}"
+
+            log.info("[grpc]: echoBidirectional [response]: $requestData")
+
             emit(
                 SampleResponse.newBuilder()
-                    .setData("Reply: ${incoming.data}")
+                    .setData(requestData)
                     .build()
             )
         }
     }
 }
+
 
