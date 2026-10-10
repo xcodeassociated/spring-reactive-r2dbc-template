@@ -140,7 +140,7 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
         val exception = assertThrows<OperationNotPermittedException> {
             permissionRepository.insertAllReturningIds(listOf(aPermission, aPermissionWithId))
         }
-        assertEquals(exception.message, "Cannot insert entities with non null id")
+        assertEquals("Cannot insert entities with non null id", exception.message)
     }
 
     @Test
@@ -153,7 +153,7 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
         val exception = assertThrows<OperationNotPermittedException> {
             permissionRepository.updateAllReturningIds(listOf(aPermission, aPermissionWithId))
         }
-        assertEquals(exception.message, "Cannot update entities with null id")
+        assertEquals("Cannot update entities with null id", exception.message)
     }
 
     @Test
@@ -166,9 +166,9 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
         val returned = permissionRepository.insertAllReturningIds(listOf(aPermission, anotherPermission))
 
         // then
-        assertEquals(returned.size, 2)
+        assertEquals(2, returned.size)
 
-        assertEquals(permissionRepository.findAll().count(), 2)
+        assertEquals(2, permissionRepository.findAll().count())
         val saved = permissionRepository.findAll().toList()
 
         assertEquals(saved[0].name, aPermission.name)
@@ -194,10 +194,10 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
         val anotherPermissionWithId = anotherPermission.copy(id = returned[anotherPermission])
 
         // then
-        assertEquals(returned.size, 2)
+        assertEquals(2, returned.size)
 
         val saved = permissionRepository.findAll().toList()
-        assertEquals(saved.size, 2)
+        assertEquals(2, saved.size)
 
         assertEquals(saved[0].uuid, aPermission.uuid)
         assertEquals(saved[0].name, aPermission.name)
@@ -230,10 +230,10 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
         assertEquals(changedPermission.uuid, saved[0].uuid)
         assertEquals(changedAnotherPermission.uuid, saved[1].uuid)
 
-        assertEquals(changedReturned.size, 2)
+        assertEquals(2, changedReturned.size)
 
         val changedSaved = permissionRepository.findAll().toList()
-        assertEquals(changedSaved.size, 2)
+        assertEquals(2, changedSaved.size)
 
         assertEquals(changedSaved[0].id, changedPermission.id)
         assertEquals(changedSaved[0].name, changedPermission.name)
@@ -267,10 +267,10 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
         val aPermissionWithId = aPermission.copy(id = returned[aPermission])
 
         // then
-        assertEquals(returned.size, 1)
+        assertEquals(1, returned.size)
 
         val saved = permissionRepository.findAll().toList()
-        assertEquals(saved.size, 1)
+        assertEquals(1, saved.size)
 
         assertEquals(saved[0].uuid, aPermission.uuid)
         assertEquals(saved[0].name, aPermission.name)
@@ -291,10 +291,10 @@ class BatchPermissionRepositoryImplTest : BaseIntegrationTest(), PermissionFixtu
         // then
         assertEquals(changedPermission.uuid, saved[0].uuid)
 
-        assertEquals(changedReturned.size, 1)
+        assertEquals(1, changedReturned.size)
 
         val changedSaved = permissionRepository.findAll().toList()
-        assertEquals(changedSaved.size, 1)
+        assertEquals(1, changedSaved.size)
 
         assertEquals(changedSaved[0].id, changedPermission.id)
         assertEquals(changedSaved[0].name, changedPermission.name)
@@ -343,9 +343,9 @@ class PermissionTest : BaseIntegrationTest(), PermissionFixture {
             .expectStatus().isOk
 
         // then
-        assertEquals(permissionRepository.findAll().count(), 1)
-        assertEquals(permissionRepository.findAll().first().name, aPermissionDto.name)
-        assertEquals(permissionRepository.findAll().first().description, aPermissionDto.description)
+        assertEquals(1, permissionRepository.findAll().count())
+        assertEquals(aPermissionDto.name, permissionRepository.findAll().first().name)
+        assertEquals(aPermissionDto.description, permissionRepository.findAll().first().description)
     }
 
     @Test

@@ -7,13 +7,10 @@ import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
 import java.util.*
 
-open class BaseEntity(
-    @Transient
-    open val uuid: UUID,
-
-    @Transient
-    open var id: Long? = null,
-)
+abstract class BaseEntity {
+    abstract val uuid: UUID
+    abstract var id: Long?
+}
 
 @Table(value = "permissions")
 data class Permission(
@@ -51,7 +48,7 @@ data class Permission(
     @NotNull
     @Column(value = "description")
     val description: String
-) : BaseEntity(uuid) {
+) : BaseEntity() {
     constructor(name: String, description: String) :
             this(
                 uuid = UUID.randomUUID(),
