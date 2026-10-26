@@ -14,6 +14,7 @@
 - **Never Cut Corners**: Do not add dummy implementations merely to make tests pass. Follow SOLID, Open‑Closed, KISS, and hexagonal architecture principles.
 - **Modular Design**: Keep new code modular, well‑encapsulated, and adhere to the existing layered architecture.
 - **Documentation & Review**: Update relevant documentation, comments, and ensure code quality matches a senior developer’s standards.
+- **Keep the README Up‑to‑Date**: `README.md` is the entry point of this template and must always reflect the actual state of the project. Whenever development changes anything the README describes – added/removed features or optional modules, tech stack or dependency versions, ports/URLs/profiles, project structure, Docker/Compose services, build/test commands, security rules, or the "Removing optional features" guide – update `README.md` in the same change set, before considering the work done. At the end of every task, re‑check the README against the code and fix any drift; do not leave stale documentation behind.
 
 
 1. [Project Overview](#project-overview)
@@ -145,6 +146,7 @@ import org.springframework.web.bind.annotation.RequestMapping
   - **Adapter** (e.g., Kafka listener to service).
   - **Decorator** (adding logging or metrics to repositories).
 - **Do NOT** introduce a full‑blown DDD layer unless a clear bounded context emerges.
+- **R2DBC entity inheritance**: R2DBC has no `@MappedSuperclass` and no JPA annotations. Do **not** shadow base‑class properties (`@Transient` base property + `override` in entity) – duplicate backing fields break the Kotlin entity instantiator on read (verified on Boot 4.1.1). For data‑class entities use `abstract val/var` in `BaseEntity` (no backing field in the base). An `open` base with real mapping annotations only works with non‑data‑class entities that delegate to the super constructor.
 
 ---
 ## Testing Guidelines
@@ -195,6 +197,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 6. **Never commit or push without explicit user approval** – agents must obtain clear user confirmation before executing any `git commit` or `git push` commands.
 7. **Rebase** – keep a linear history; avoid merge commits.
 8. **CI Checks** – ensure `./gradlew check` passes before merging.
+9. **README Sync** – before committing or opening a PR, verify `README.md` is up‑to‑date with the change (features, structure, commands, ports, versions, optional-feature removal steps); update it in the same commit if anything drifted.
 
 ---
 ## Additional Resources
