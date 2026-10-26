@@ -15,6 +15,7 @@
 - **Modular Design**: Keep new code modular, well‑encapsulated, and adhere to the existing layered architecture.
 - **Documentation & Review**: Update relevant documentation, comments, and ensure code quality matches a senior developer’s standards.
 - **Keep the README Up‑to‑Date**: `README.md` is the entry point of this template and must always reflect the actual state of the project. Whenever development changes anything the README describes – added/removed features or optional modules, tech stack or dependency versions, ports/URLs/profiles, project structure, Docker/Compose services, build/test commands, security rules, or the "Removing optional features" guide – update `README.md` in the same change set, before considering the work done. At the end of every task, re‑check the README against the code and fix any drift; do not leave stale documentation behind.
+- **Keep AGENTS.md Up‑to‑Date**: this file documents how to work on the repo, so it must match reality. Whenever development changes anything referenced here – build/lint/test commands or Gradle tasks, language/framework versions, architecture or package layout, testing tooling, conventions, or CI expectations – update `AGENTS.md` in the same change set. Never leave commands, versions, or rules that no longer exist in the codebase; verify commands actually run before documenting them.
 
 
 1. [Project Overview](#project-overview)
@@ -52,13 +53,12 @@ The codebase follows a **hexagonal / clean‑architecture** flavour – core dom
 | **Compile** | `./gradlew clean build` | Full clean compile, runs tests, creates JAR. |
 | **Run Application** | `./gradlew bootRun` | Starts the Spring Boot app (uses `application.properties`). |
 | **Package JAR** | `./gradlew bootJar` | Produces an executable JAR in `build/libs`. |
-| **Run Checks Only** | `./gradlew check` | Executes linting, static analysis, and tests without building the JAR. |
-| **Static Analysis** | `./gradlew detektMain detektTest` | Runs Detekt (Kotlin linter) on source and test code. |
-| **Formatting** | `./gradlew spotlessApply` | Applies Spotless formatting (Kotlin + Gradle). |
+| **Run Checks Only** | `./gradlew check` | Runs the `test` task without building the JAR (no lint/static-analysis plugins are configured yet). |
 | **Run All Tests** | `./gradlew test` | Executes unit + integration tests. |
-| **Run Integration Tests Only** | `./gradlew integrationTest` *(if defined)* | Use custom source set; otherwise filter with tags. |
-| **Run Tests with Coverage** | `./gradlew jacocoTestReport` | Generates a JaCoCo coverage report under `build/reports/jacoco`. |
+| **Run Integration Tests** | `./gradlew test --tests "com.softeno.template.app.*Test"` | Integration tests live in `src/test/.../IntegrationTest.kt`, activate the `integration` profile, and use Testcontainers. |
 | **Run a Single Test** | See section below. |
+
+> **Note:** Detekt, Spotless, and JaCoCo are **not currently applied** in `build.gradle`, so `detektMain`/`detektTest`, `spotlessApply`, and `jacocoTestReport` do not exist yet. The style sections below describe the intended conventions; add the plugins to `build.gradle` to make them enforceable.
 
 ---
 ## Running a Single Test
@@ -66,10 +66,10 @@ Kotlin test classes are discovered by the `test` task. To run a single test meth
 
 ```bash
 # Run a single test class
-./gradlew test --tests "com.softeno.template.app.permission.service.PermissionServiceTest"
+./gradlew test --tests "com.softeno.template.app.PermissionTest"
 
-# Run a single test method (full qualified name)
-./gradlew test --tests "com.softeno.template.app.permission.service.PermissionServiceTest.shouldPersistAndRetrievePermission"
+# Run a single test method (names contain spaces – keep the whole pattern quoted)
+./gradlew test --tests "com.softeno.template.app.PermissionTest.should return empty permission response when no permission created"
 ```
 
 *Tip for agents*: When a failing test is identified, re‑run it with the same filter to verify the fix quickly.
@@ -97,7 +97,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 - **Braces**: K&R style – opening brace on same line.
 - **Trailing commas** in multi‑line collections/parameter lists (Kotlin 1.9 supports it).
 - **Blank lines**: separate logical sections (e.g., imports, class header, properties, functions).
-- **Spotless** is the single source of truth – run `./gradlew spotlessApply` before committing.
+- **Spotless** would be the single source of truth – note it is **not yet wired** into the build; format code manually to the rules below until `spotlessApply` exists.
 
 ### 3. Types & Nullability
 - Prefer **non‑nullable** types. Use `?` only when the value can legitimately be absent.
@@ -114,7 +114,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 | Functions | camelCase, verb‑first (`createPermission`, `findById`) |
 | Properties | camelCase, descriptive (`permissionId`, `createdAt`) |
 | Constants | Upper‑snake (`MAX_RETRY_ATTEMPTS`) |
-| Test classes | `<ClassUnderTest>Test` (`PermissionServiceTest`) |
+| Test classes | `<ClassUnderTest>Test` (`PermissionTest`, `ExternalControllerTest`) |
 | Test methods | descriptive, `should<Behavior>` (`shouldPersistAndRetrievePermission`) |
 
 ### 5. Error Handling
@@ -171,8 +171,8 @@ import org.springframework.web.bind.annotation.RequestMapping
    - Use **Builder pattern** or Kotlin `apply {}` blocks for fixture creation.
    - Keep fixtures **immutable**; share via companion objects when appropriate.
 6. **CI Recommendations**
-   - `./gradlew test` must succeed in CI.
-   - `./gradlew detektMain detektTest spotlessCheck` must pass.
+   - `./gradlew build` is the current CI gate (`ci.yml` runs it on every branch/PR).
+   - Add `./gradlew detektMain detektTest spotlessCheck` here once those plugins are configured.
    - Failing tests abort the PR.
 
 ---
@@ -197,7 +197,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 6. **Never commit or push without explicit user approval** – agents must obtain clear user confirmation before executing any `git commit` or `git push` commands.
 7. **Rebase** – keep a linear history; avoid merge commits.
 8. **CI Checks** – ensure `./gradlew check` passes before merging.
-9. **README Sync** – before committing or opening a PR, verify `README.md` is up‑to‑date with the change (features, structure, commands, ports, versions, optional-feature removal steps); update it in the same commit if anything drifted.
+9. **Docs Sync** – before committing or opening a PR, verify `README.md` **and** `AGENTS.md` are up‑to‑date with the change (features, structure, commands, ports, versions, conventions, optional-feature removal steps); update them in the same commit if anything drifted.
 
 ---
 ## Additional Resources

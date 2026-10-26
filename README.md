@@ -156,7 +156,7 @@ Apart from the flagged cross-references, nothing else in the app depends on the 
 |--------------------|-------------------------------------------|
 | Full build         | `./gradlew clean build`                   |
 | Run all tests      | `./gradlew test`                          |
-| Run single test    | `./gradlew test --tests "com.softeno.template.app.permission.service.PermissionServiceTest"` |
+| Run single test    | `./gradlew test --tests "com.softeno.template.app.PermissionTest"` |
 
 (`AGENTS.md` also describes detekt/spotless/jacoco conventions; those plugins are not currently wired into `build.gradle` — add them if you want the lint tasks.)
 
