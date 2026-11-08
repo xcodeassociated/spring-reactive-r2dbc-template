@@ -19,7 +19,9 @@ class KafkaSampleController(
 ) {
     private val log = LogFactory.getLog(javaClass)
 
-    @KafkaListener(id = "\${spring.kafka.consumer.group-id}", topics = ["\${com.softeno.kafka.rx}"])
+    // Fan-out group (ADR-0008): per-instance suffix so EVERY replica observes
+    // every message on the shared bus topic (see KafkaKeycloakController).
+    @KafkaListener(id = "\${spring.kafka.consumer.group-id}-\${com.softeno.kafka.instance-id:standalone}", topics = ["\${com.softeno.kafka.rx}"])
     suspend fun listen(record: ConsumerRecord<String, JsonNode>) {
         log.info("[kafka] rx (${props.rx}): ${record.key()}: ${record.value()}")
     }

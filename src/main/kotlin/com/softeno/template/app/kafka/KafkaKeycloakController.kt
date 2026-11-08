@@ -16,7 +16,11 @@ class KafkaKeycloakController(
 ) {
     private val log = LogFactory.getLog(javaClass)
 
-    @KafkaListener(id = "\${spring.kafka.consumer.group-id}-keycloak", topics = ["\${com.softeno.kafka.keycloak}"])
+    // Fan-out group (ADR-0008): the per-instance suffix means EVERY replica
+    // consumes EVERY keycloak event — a shared group would hand each event to
+    // one pod only and leave the other replicas blind. Side effects here must
+    // stay local-only (currently: logging).
+    @KafkaListener(id = "\${spring.kafka.consumer.group-id}-keycloak-\${com.softeno.kafka.instance-id:standalone}", topics = ["\${com.softeno.kafka.keycloak}"])
     suspend fun listen(record: ConsumerRecord<String, JsonNode>) {
         log.debug("[kafka] rx keycloak raw: ${record.key()}: ${record.value()}")
         val dto: KeycloakUserEvent = objectMapper.readValue(record.value().toString(), KeycloakUserEvent::class.java)
